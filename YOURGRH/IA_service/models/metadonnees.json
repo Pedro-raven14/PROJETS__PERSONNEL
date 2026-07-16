@@ -1,0 +1,77 @@
+{
+  "competences": [
+    "JavaScript",
+    "PHP",
+    "Excel",
+    "Word",
+    "Python",
+    "Leadership",
+    "Gestion de projet",
+    "Communication",
+    "SQL",
+    "React",
+    "Design UX",
+    "DevOps",
+    "Marketing",
+    "Vente",
+    "Comptabilité"
+  ],
+  "formations": [
+    {
+      "name": "Formation JavaScript Avancé",
+      "description": "Maîtrisez JavaScript moderne"
+    },
+    {
+      "name": "Formation PHP Expert",
+      "description": "Développement backend avec PHP"
+    },
+    {
+      "name": "Formation Excel Pro",
+      "description": "Maîtrisez les fonctions avancées Excel"
+    },
+    {
+      "name": "Formation Word Perfectionnement",
+      "description": "Créez des documents professionnels"
+    },
+    {
+      "name": "Formation Python Data Science",
+      "description": "Analyse de données avec Python"
+    },
+    {
+      "name": "Formation Leadership & Management",
+      "description": "Devenez un leader d'équipe"
+    },
+    {
+      "name": "Formation Communication & Soft Skills",
+      "description": "Améliorez vos compétences relationnelles"
+    },
+    {
+      "name": "Formation SQL Optimisation",
+      "description": "Optimisez vos requêtes SQL"
+    },
+    {
+      "name": "Formation React Moderne",
+      "description": "Créez des interfaces modernes"
+    },
+    {
+      "name": "Formation UX Design",
+      "description": "Concevez des expériences utilisateur"
+    },
+    {
+      "name": "Formation DevOps & CI/CD",
+      "description": "Automatisez vos déploiements"
+    },
+    {
+      "name": "Formation Marketing Digital",
+      "description": "Stratégies marketing modernes"
+    },
+    {
+      "name": "Formation Techniques de Vente",
+      "description": "Améliorez vos performances commerciales"
+    },
+    {
+      "name": "Formation Comptabilité",
+      "description": "Maîtrisez les bases comptables"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "features": [
+    "anciennete_mois",
+    "salaire",
+    "note_moyenne",
+    "nb_evaluations",
+    "nb_formations",
+    "nb_promotions",
+    "nb_competences",
+    "niveau_moyen_competences",
+    "score_performance",
+    "rendement_equipe",
+    "nb_conges_refuses"
+  ]
+}

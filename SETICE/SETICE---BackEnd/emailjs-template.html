@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .content { background: white; padding: 30px; }
+        .credentials { background: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 20px 0; }
+        .password { font-family: monospace; font-size: 18px; background: #e9ecef; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .button { background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; }
+        .warning { color: #dc3545; background: #f8d7da; padding: 15px; border-radius: 5px; }
+        .footer { background: #6c757d; color: white; padding: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎓 Bienvenue {{user_prenom}} !</h1>
+        <p>Votre compte étudiant est prêt</p>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour <strong>{{user_prenom}} {{user_nom}}</strong>,</p>
+        <p>Voici vos identifiants de connexion à la plateforme :</p>
+        
+        <div class="credentials">
+            <h3 style="color: #667eea; margin-top: 0;">🔐 Vos identifiants</h3>
+            <p><strong>📧 Email :</strong> {{user_email}}</p>
+            <p><strong>🔑 Mot de passe temporaire :</strong></p>
+            <div class="password">{{user_password}}</div>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{login_url}}" class="button">
+                👉 Se connecter maintenant
+            </a>
+        </div>
+        
+        <div class="warning">
+            ⚠️ <strong>Important :</strong> Changez ce mot de passe lors de votre première connexion pour des raisons de sécurité.
+        </div>
+        
+        <p style="color: #6c757d; font-size: 14px; margin-top: 30px;">
+            Si le bouton ne fonctionne pas, copiez ce lien :<br>
+            {{login_url}}
+        </p>
+    </div>
+    
+    <div class="footer">
+        <p style="margin: 0; font-size: 14px;">
+            Support Étudiant • Plateforme Universitaire<br>
+            <em>Email envoyé automatiquement</em>
+        </p>
+    </div>
+</body>
+</html>

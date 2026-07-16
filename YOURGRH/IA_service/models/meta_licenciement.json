@@ -1,0 +1,15 @@
+{
+  "features": [
+    "note_moyenne",
+    "nb_evaluations",
+    "score_performance",
+    "rendement_equipe",
+    "nb_formations_suivies",
+    "nb_competences",
+    "niveau_moyen_competences",
+    "anciennete_mois",
+    "nb_absences_non_justif",
+    "mois_depuis_formation",
+    "a_equipe"
+  ]
+}
