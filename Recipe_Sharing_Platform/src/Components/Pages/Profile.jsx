@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Edit2, Plus, Trash2, Heart, BookOpen, Settings, UserPlus, Users } from "lucide-react";
+import { Edit2, Plus, Trash2, Heart, BookOpen, Settings, UserPlus } from "lucide-react";
 import {
-  getUserByUsername, getRecipesByAuthor, getFavoriteRecipes,
-  deleteRecipe,
+  getUserByUsername, getRecipesByAuthor, getFavoriteRecipes, deleteRecipe,
 } from "../../utils/localStorage";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../ui/Toast";
@@ -11,10 +10,10 @@ import RecipeCard from "../ui/RecipeCard";
 import Avatar from "../ui/Avatar";
 
 const TABS = [
-  { id: "recipes",   label: "Mes recettes" },
-  { id: "favorites", label: "Favoris" },
-  { id: "following", label: "Abonnements" },
-  { id: "settings",  label: "Paramètres" },
+  { id: "recipes",       label: "Mes recettes",  icon: <BookOpen size={15} /> },
+  { id: "favorites",     label: "Favoris",        icon: <Heart size={15} /> },
+  { id: "abonnements",   label: "Abonnements",    icon: <UserPlus size={15} /> },
+  { id: "settings",      label: "Paramètres",     icon: <Settings size={15} /> },
 ];
 
 export default function Profile() {
@@ -36,7 +35,6 @@ export default function Profile() {
     if (!user) { navigate("/"); return; }
     setProfileUser(user);
     setRecipes(getRecipesByAuthor(user.id));
-
     if (isOwn && currentUser) {
       setFavorites(getFavoriteRecipes(currentUser.id));
       setSettingsForm({
@@ -87,47 +85,56 @@ export default function Profile() {
   const drafts    = recipes.filter(r => r.status === "draft");
 
   return (
-    <div style={{ backgroundColor: "#F8F9FA", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#f9fafb", minHeight: "100vh" }}>
 
-      {/* ── Bannière dégradée ──────────────────────────────────── */}
+      {/* ── Bannière dégradée ─────────────────────────────────── */}
       <div style={{
         height: 200,
-        background: "linear-gradient(135deg, #fb923c 0%, #f97316 30%, #fbbf24 60%, #34d399 100%)"
+        background: "linear-gradient(135deg, #fb923c 0%, #f97316 30%, #22c55e 100%)",
       }} />
 
-      {/* ── Card profil ────────────────────────────────────────── */}
+      {/* ── Card profil ───────────────────────────────────────── */}
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 1.5rem" }}>
         <div style={{
           backgroundColor: "white",
-          borderRadius: "1rem",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          borderRadius: "1.25rem",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
           padding: "1.5rem 2rem",
-          marginTop: -64,
-          marginBottom: "1.5rem",
+          marginTop: -60,
           display: "flex",
           alignItems: "center",
           gap: "1.5rem",
           flexWrap: "wrap",
+          position: "relative",
+          zIndex: 10,
         }}>
           {/* Avatar */}
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{
-              width: 88, height: 88, borderRadius: "50%",
-              border: "4px solid white",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-              overflow: "hidden", flexShrink: 0
+              width: 80, height: 80, borderRadius: "50%",
+              backgroundColor: "#FF6B35",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "2rem",
+              border: "3px solid white",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
+              overflow: "hidden",
             }}>
-              <Avatar user={profileUser} size="xl" />
+              {profileUser.avatar ? (
+                <img src={profileUser.avatar} alt={profileUser.fullName}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ color: "white", fontSize: "2rem" }}>👨‍🍳</span>
+              )}
             </div>
             {isOwn && (
               <label style={{
-                position: "absolute", bottom: 2, right: 2,
-                width: 26, height: 26, backgroundColor: "#FF6B35",
-                borderRadius: "50%", display: "flex",
-                alignItems: "center", justifyContent: "center",
-                cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+                position: "absolute", bottom: 0, right: 0,
+                width: 24, height: 24,
+                backgroundColor: "#FF6B35", borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", border: "2px solid white",
               }}>
-                <span style={{ color: "white", fontSize: "0.75rem" }}>📷</span>
+                <span style={{ color: "white", fontSize: "0.65rem" }}>✏️</span>
                 <input type="file" accept="image/*"
                   onChange={handleAvatarChange} style={{ display: "none" }} />
               </label>
@@ -137,8 +144,8 @@ export default function Profile() {
           {/* Infos */}
           <div style={{ flex: 1, minWidth: 200 }}>
             <h1 style={{
-              fontSize: "1.5rem", fontWeight: 800, color: "#111827",
-              marginBottom: "0.2rem"
+              fontSize: "1.5rem", fontWeight: 800,
+              color: "#111827", marginBottom: "0.15rem"
             }}>
               {profileUser.fullName}
             </h1>
@@ -146,72 +153,67 @@ export default function Profile() {
               @{profileUser.username}
             </p>
             {profileUser.bio && (
-              <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>{profileUser.bio}</p>
+              <p style={{ fontSize: "0.875rem", color: "#6b7280" }}>
+                {profileUser.bio}
+              </p>
             )}
 
             {/* Stats */}
-            <div style={{ display: "flex", gap: "1.5rem", marginTop: "0.75rem" }}>
+            <div style={{ display: "flex", gap: "1.5rem", marginTop: "0.875rem" }}>
               {[
-                { count: published.length, label: "Recettes" },
-                { count: "1,2K", label: "Abonnés" },
-                { count: 89, label: "Abonnements" },
+                { value: published.length, label: "Recettes" },
+                { value: "1,2K", label: "Abonnés" },
+                { value: "89", label: "Abonnements" },
               ].map(stat => (
-                <div key={stat.label} style={{ textAlign: "left" }}>
-                  <div style={{ fontWeight: 800, fontSize: "1.1rem", color: "#111827", lineHeight: 1 }}>
-                    {stat.count}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.15rem" }}>
+                <div key={stat.label}>
+                  <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#111827" }}>
+                    {stat.value}
+                  </span>
+                  <span style={{
+                    display: "block", fontSize: "0.75rem",
+                    color: "#9ca3af", marginTop: "0.1rem"
+                  }}>
                     {stat.label}
-                  </div>
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Boutons actions */}
-          <div style={{ display: "flex", gap: "0.625rem", flexShrink: 0, alignItems: "center" }}>
+          {/* Boutons */}
+          <div style={{ display: "flex", gap: "0.625rem", flexShrink: 0 }}>
             {isOwn ? (
               <button onClick={() => setActiveTab("settings")} style={{
                 display: "inline-flex", alignItems: "center", gap: "0.375rem",
                 border: "1px solid #e5e7eb", borderRadius: "9999px",
-                padding: "0.5rem 1.125rem", fontSize: "0.875rem", fontWeight: 600,
-                background: "white", cursor: "pointer", color: "#374151"
+                padding: "0.5rem 1.125rem", fontSize: "0.875rem", fontWeight: 500,
+                background: "white", cursor: "pointer", color: "#374151",
               }}>
                 <Edit2 size={13} /> Modifier
               </button>
             ) : (
-              <>
-                <button style={{
-                  display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                  border: "1px solid #e5e7eb", borderRadius: "9999px",
-                  padding: "0.5rem 1.125rem", fontSize: "0.875rem", fontWeight: 600,
-                  background: "white", cursor: "pointer", color: "#374151"
-                }}>
-                  <Edit2 size={13} /> Modifier
-                </button>
-                <button style={{
-                  display: "inline-flex", alignItems: "center", gap: "0.375rem",
-                  backgroundColor: "#FF6B35", color: "white",
-                  border: "none", borderRadius: "9999px",
-                  padding: "0.5rem 1.25rem", fontSize: "0.875rem", fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: "0 3px 10px rgba(255,107,53,0.3)"
-                }}>
-                  <UserPlus size={13} /> Suivre
-                </button>
-              </>
+              <button style={{
+                display: "inline-flex", alignItems: "center", gap: "0.375rem",
+                backgroundColor: "#FF6B35", color: "white",
+                border: "none", borderRadius: "9999px",
+                padding: "0.5rem 1.25rem", fontSize: "0.875rem", fontWeight: 600,
+                cursor: "pointer",
+              }}>
+                Suivre
+              </button>
             )}
           </div>
         </div>
 
-        {/* ── Onglets ────────────────────────────────────────────── */}
+        {/* ── Onglets ───────────────────────────────────────────── */}
         <div style={{
           display: "flex", gap: 0,
           borderBottom: "2px solid #e5e7eb",
-          marginBottom: "1.5rem", backgroundColor: "transparent"
+          marginTop: "1.5rem", marginBottom: "1.5rem",
         }}>
-          {(isOwn ? TABS : TABS.filter(t => t.id !== "settings")).map(tab => (
+          {(isOwn ? TABS : TABS.filter(t => t.id !== "settings" && t.id !== "favorites")).map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              display: "inline-flex", alignItems: "center", gap: "0.375rem",
               padding: "0.75rem 1.25rem",
               fontSize: "0.9rem", fontWeight: activeTab === tab.id ? 700 : 500,
               background: "none", border: "none", cursor: "pointer",
@@ -219,41 +221,51 @@ export default function Profile() {
               marginBottom: -2,
               color: activeTab === tab.id ? "#FF6B35" : "#6b7280",
               transition: "color 0.15s",
-              whiteSpace: "nowrap"
+              whiteSpace: "nowrap",
             }}>
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* ── Contenu onglets ─────────────────────────────────────── */}
+        {/* ── Contenu onglets ───────────────────────────────────── */}
 
         {/* Mes recettes */}
         {activeTab === "recipes" && (
-          <div style={{ paddingBottom: "5rem", position: "relative" }}>
+          <div style={{ paddingBottom: "3rem" }}>
             <div style={{
               display: "flex", alignItems: "center",
               justifyContent: "space-between", marginBottom: "1.25rem"
             }}>
-              <span style={{ fontSize: "0.95rem", color: "#6b7280" }}>
+              <span style={{ fontWeight: 600, color: "#374151" }}>
                 {published.length} recette{published.length !== 1 ? "s" : ""}
                 {drafts.length > 0 && (
-                  <span style={{ marginLeft: "0.5rem", color: "#9ca3af" }}>
-                    · {drafts.length} brouillon{drafts.length !== 1 ? "s" : ""}
+                  <span style={{ marginLeft: "0.5rem", color: "#9ca3af", fontSize: "0.85rem" }}>
+                    + {drafts.length} brouillon{drafts.length !== 1 ? "s" : ""}
                   </span>
                 )}
               </span>
+              {isOwn && (
+                <Link to="/creer-recette" style={{
+                  display: "inline-flex", alignItems: "center", gap: "0.375rem",
+                  backgroundColor: "#FF6B35", color: "white",
+                  padding: "0.5rem 1rem", borderRadius: "9999px",
+                  fontSize: "0.875rem", fontWeight: 600, textDecoration: "none",
+                }}>
+                  <Plus size={15} /> Nouvelle recette
+                </Link>
+              )}
             </div>
 
             {recipes.length === 0 ? (
               <EmptyState emoji="🍽️" title="Aucune recette pour l'instant"
                 subtitle="Créez votre première recette !"
-                cta={{ to: "/creer-recette", label: "Créer une recette" }} />
+                cta={isOwn ? { to: "/creer-recette", label: "Créer une recette" } : null} />
             ) : (
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-                gap: "1.25rem"
+                gap: "1.25rem",
               }}>
                 {recipes.map(recipe => (
                   <div key={recipe.id} style={{ position: "relative" }}>
@@ -264,30 +276,30 @@ export default function Profile() {
                         backgroundColor: "#1f2937", color: "white",
                         fontSize: "0.7rem", fontWeight: 600,
                         padding: "0.2rem 0.625rem", borderRadius: "9999px",
-                        pointerEvents: "none"
                       }}>Brouillon</div>
                     )}
                     {isOwn && (
                       <div style={{
-                        position: "absolute", top: "0.75rem", left: "0.75rem",
+                        position: "absolute", bottom: "4.5rem", right: "0.75rem",
                         display: "flex", gap: "0.375rem",
-                        opacity: 0, transition: "opacity 0.15s"
-                      }} className="card-edit-actions">
+                      }}>
                         <Link to={`/modifier-recette/${recipe.id}`}
                           onClick={e => e.stopPropagation()}
                           style={{
                             width: 30, height: 30, backgroundColor: "white",
-                            borderRadius: "50%", display: "flex",
-                            alignItems: "center", justifyContent: "center",
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.15)", textDecoration: "none"
+                            borderRadius: "50%", border: "1px solid #e5e7eb",
+                            display: "flex", alignItems: "center",
+                            justifyContent: "center", textDecoration: "none",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
                           }}>
                           <Edit2 size={12} color="#ea580c" />
                         </Link>
                         <button onClick={e => { e.stopPropagation(); handleDeleteRecipe(recipe.id); }} style={{
                           width: 30, height: 30, backgroundColor: "white",
-                          borderRadius: "50%", border: "none", cursor: "pointer",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          boxShadow: "0 2px 6px rgba(0,0,0,0.15)"
+                          borderRadius: "50%", border: "1px solid #e5e7eb",
+                          display: "flex", alignItems: "center",
+                          justifyContent: "center", cursor: "pointer",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
                         }}>
                           <Trash2 size={12} color="#ef4444" />
                         </button>
@@ -297,38 +309,24 @@ export default function Profile() {
                 ))}
               </div>
             )}
-
-            {/* Bouton + flottant */}
-            {isOwn && (
-              <Link to="/creer-recette" style={{
-                position: "fixed", bottom: "2rem", right: "2rem",
-                width: 52, height: 52, backgroundColor: "#FF6B35",
-                borderRadius: "50%", display: "flex",
-                alignItems: "center", justifyContent: "center",
-                boxShadow: "0 4px 16px rgba(255,107,53,0.45)",
-                textDecoration: "none", zIndex: 30
-              }}>
-                <Plus size={22} color="white" />
-              </Link>
-            )}
           </div>
         )}
 
         {/* Favoris */}
-        {activeTab === "favorites" && (
+        {activeTab === "favorites" && isOwn && (
           <div style={{ paddingBottom: "3rem" }}>
-            <p style={{ fontSize: "0.95rem", color: "#6b7280", marginBottom: "1.25rem" }}>
-              {favorites.length} recette{favorites.length !== 1 ? "s" : ""} favorite{favorites.length !== 1 ? "s" : ""}
+            <p style={{ fontWeight: 600, color: "#374151", marginBottom: "1.25rem" }}>
+              {favorites.length} favori{favorites.length !== 1 ? "s" : ""}
             </p>
             {favorites.length === 0 ? (
-              <EmptyState emoji="❤️" title="Aucune recette favorite"
+              <EmptyState emoji="❤️" title="Aucun favori"
                 subtitle="Explorez et sauvegardez vos recettes préférées !"
-                cta={{ to: "/recettes", label: "Explorer les recettes" }} />
+                cta={{ to: "/recettes", label: "Explorer" }} />
             ) : (
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-                gap: "1.25rem"
+                gap: "1.25rem",
               }}>
                 {favorites.map(recipe => (
                   <RecipeCard key={recipe.id} recipe={recipe}
@@ -340,92 +338,94 @@ export default function Profile() {
         )}
 
         {/* Abonnements */}
-        {activeTab === "following" && (
+        {activeTab === "abonnements" && (
           <div style={{ paddingBottom: "3rem" }}>
-            <EmptyState emoji="👥" title="Aucun abonnement"
-              subtitle="Suivez d'autres cuisiniers pour voir leurs recettes ici." />
+            <EmptyState emoji="👥" title="Abonnements"
+              subtitle="Cette fonctionnalité sera disponible prochainement." />
           </div>
         )}
 
         {/* Paramètres */}
         {activeTab === "settings" && isOwn && (
           <form onSubmit={handleSaveSettings} style={{
-            maxWidth: 520, paddingBottom: "3rem",
-            display: "flex", flexDirection: "column", gap: "1.25rem"
+            maxWidth: 480, paddingBottom: "3rem",
+            display: "flex", flexDirection: "column", gap: "1.25rem",
           }}>
             <h2 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#111827" }}>
               Modifier le profil
             </h2>
 
-            {/* Avatar */}
-            <div style={{
-              backgroundColor: "white", borderRadius: "1rem",
-              border: "1px solid #f3f4f6", padding: "1.25rem",
-              display: "flex", alignItems: "center", gap: "1rem"
-            }}>
-              <Avatar user={{ ...profileUser, avatar: settingsForm.avatar }} size="lg" />
-              <div>
-                <label style={{ fontSize: "0.875rem", color: "#FF6B35", fontWeight: 600, cursor: "pointer", display: "block" }}>
+            {/* Photo */}
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: "50%",
+                backgroundColor: "#FF6B35", overflow: "hidden",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {settingsForm.avatar ? (
+                  <img src={settingsForm.avatar} alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: "1.75rem" }}>👨‍🍳</span>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                <label style={{ fontSize: "0.875rem", color: "#FF6B35", fontWeight: 600, cursor: "pointer" }}>
                   Changer la photo
-                  <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: "none" }} />
+                  <input type="file" accept="image/*"
+                    onChange={handleAvatarChange} style={{ display: "none" }} />
                 </label>
                 {settingsForm.avatar && (
                   <button type="button"
                     onClick={() => setSettingsForm(p => ({ ...p, avatar: null }))}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: "0.8rem", marginTop: "0.25rem", display: "block" }}>
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: "#9ca3af", fontSize: "0.8rem", textAlign: "left", padding: 0,
+                    }}>
                     Supprimer
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Champs */}
-            <div style={{
-              backgroundColor: "white", borderRadius: "1rem",
-              border: "1px solid #f3f4f6", padding: "1.25rem",
-              display: "flex", flexDirection: "column", gap: "1rem"
-            }}>
-              {[
-                { label: "Nom complet", field: "fullName", type: "text" },
-                { label: "Bio", field: "bio", type: "textarea" },
-              ].map(({ label, field, type }) => (
-                <div key={field}>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#374151", marginBottom: "0.375rem" }}>
-                    {label}
-                  </label>
-                  {type === "textarea" ? (
-                    <textarea value={settingsForm[field]}
-                      onChange={e => setSettingsForm(p => ({ ...p, [field]: e.target.value }))}
-                      rows={3}
-                      style={{
-                        width: "100%", padding: "0.625rem 1rem",
-                        border: "1px solid #e5e7eb", borderRadius: "0.75rem",
-                        fontSize: "0.875rem", fontFamily: "Inter, sans-serif",
-                        outline: "none", resize: "none", color: "#1f2937",
-                        boxSizing: "border-box"
-                      }} />
-                  ) : (
-                    <input type={type} value={settingsForm[field]}
-                      onChange={e => setSettingsForm(p => ({ ...p, [field]: e.target.value }))}
-                      style={{
-                        width: "100%", padding: "0.625rem 1rem",
-                        border: "1px solid #e5e7eb", borderRadius: "0.75rem",
-                        fontSize: "0.875rem", fontFamily: "Inter, sans-serif",
-                        outline: "none", color: "#1f2937", boxSizing: "border-box"
-                      }} />
-                  )}
-                </div>
-              ))}
-            </div>
+            {[
+              { label: "Nom complet", field: "fullName", type: "text" },
+              { label: "Bio", field: "bio", type: "textarea" },
+            ].map(({ label, field, type }) => (
+              <div key={field} style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                <label style={{ fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>
+                  {label}
+                </label>
+                {type === "textarea" ? (
+                  <textarea value={settingsForm[field]}
+                    onChange={e => setSettingsForm(p => ({ ...p, [field]: e.target.value }))}
+                    rows={3}
+                    style={{
+                      padding: "0.625rem 1rem", border: "1px solid #e5e7eb",
+                      borderRadius: "0.75rem", fontSize: "0.875rem",
+                      fontFamily: "Inter, sans-serif", outline: "none",
+                      resize: "none", color: "#1f2937",
+                    }} />
+                ) : (
+                  <input type={type} value={settingsForm[field]}
+                    onChange={e => setSettingsForm(p => ({ ...p, [field]: e.target.value }))}
+                    style={{
+                      padding: "0.625rem 1rem", border: "1px solid #e5e7eb",
+                      borderRadius: "0.75rem", fontSize: "0.875rem",
+                      fontFamily: "Inter, sans-serif", outline: "none", color: "#1f2937",
+                    }} />
+                )}
+              </div>
+            ))}
 
             <button type="submit" style={{
               alignSelf: "flex-start",
               backgroundColor: "#FF6B35", color: "white",
               padding: "0.625rem 2rem", borderRadius: "9999px",
               fontSize: "0.875rem", fontWeight: 700, border: "none", cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(255,107,53,0.25)"
+              boxShadow: "0 4px 12px rgba(255,107,53,0.25)",
             }}>
-              Sauvegarder les modifications
+              Sauvegarder
             </button>
           </form>
         )}
@@ -444,10 +444,9 @@ function EmptyState({ emoji, title, subtitle, cta }) {
       <p style={{ fontSize: "0.875rem", color: "#9ca3af", marginBottom: "1rem" }}>{subtitle}</p>
       {cta && (
         <Link to={cta.to} style={{
-          display: "inline-block",
-          backgroundColor: "#FF6B35", color: "white",
+          display: "inline-block", backgroundColor: "#FF6B35", color: "white",
           padding: "0.625rem 1.5rem", borderRadius: "9999px",
-          fontSize: "0.875rem", fontWeight: 600, textDecoration: "none"
+          fontSize: "0.875rem", fontWeight: 600, textDecoration: "none",
         }}>
           {cta.label}
         </Link>
