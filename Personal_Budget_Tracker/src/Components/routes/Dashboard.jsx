@@ -187,7 +187,7 @@ const Dashboard = () => {
         <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-5">
 
           {/* Courbes 60% */}
-          <div className="col-span-3 rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+          <div className="lg:col-span-3 rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
             <h2 className="mb-1 font-semibold text-slate-800">Revenus vs Dépenses</h2>
             <p className="mb-4 text-xs text-slate-400">6 derniers mois</p>
             <ResponsiveContainer width="100%" height={220}>
@@ -213,7 +213,7 @@ const Dashboard = () => {
           </div>
 
           {/* Donut 40% */}
-          <div className="col-span-2 rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
+          <div className="lg:col-span-2 rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
             <h2 className="mb-1 font-semibold text-slate-800">Dépenses par catégorie</h2>
             <p className="mb-4 text-xs text-slate-400">Ce mois-ci</p>
             {chartDonut.length === 0 ? (
@@ -282,9 +282,9 @@ const Dashboard = () => {
                     <p className="truncate font-medium text-slate-800">{t.description}</p>
                     <p className="text-xs text-slate-400">{cat?.label} · {dateStr}</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${
                         t.statut === 'paye'
                           ? 'bg-emerald-50 text-emerald-600'
                           : 'bg-amber-50 text-amber-600'
@@ -293,7 +293,7 @@ const Dashboard = () => {
                       {t.statut === 'paye' ? 'Payé' : 'En attente'}
                     </span>
                     <span
-                      className={`font-semibold ${
+                      className={`font-semibold shrink-0 ${
                         t.type === 'revenu' ? 'text-emerald-500' : 'text-slate-700'
                       }`}
                     >

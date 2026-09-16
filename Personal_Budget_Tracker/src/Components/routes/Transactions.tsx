@@ -66,8 +66,8 @@ const Transactions: React.FC = () => {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
         {/* ── En-tête page ── */}
-        <div className="mb-6 flex items-start justify-between">
-          <div>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-slate-800">Transactions</h1>
             <p className="mt-0.5 text-sm text-slate-400">
               {filtrees.length} entrée{filtrees.length > 1 ? 's' : ''} sur la période
@@ -75,10 +75,11 @@ const Transactions: React.FC = () => {
           </div>
           <button
             onClick={openNew}
-            className="inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 active:scale-95"
+            className="shrink-0 inline-flex items-center gap-2 rounded-full bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-600 active:scale-95"
           >
             <Plus className="h-4 w-4" />
-            Nouvelle Transaction
+            <span className="hidden sm:inline">Nouvelle Transaction</span>
+            <span className="sm:hidden">Nouveau</span>
           </button>
         </div>
 

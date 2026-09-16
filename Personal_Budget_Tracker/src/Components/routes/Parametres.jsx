@@ -15,9 +15,9 @@ const BudgetSlider = ({ cat, depense, budget, onChange, formatMontant }) => {
       <div className="flex items-center gap-3 mb-3">
         <CategoryIcon categorieId={cat.id} size="md" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-slate-800">{cat.label}</span>
-            <span className="text-sm text-slate-500">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+            <span className="font-medium text-slate-800 truncate">{cat.label}</span>
+            <span className="text-xs text-slate-500 shrink-0">
               {formatMontant(depense)} / {formatMontant(budget)} · {pct}%
             </span>
           </div>

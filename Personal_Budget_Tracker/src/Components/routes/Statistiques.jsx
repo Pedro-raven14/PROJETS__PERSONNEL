@@ -87,7 +87,7 @@ const Statistiques = () => {
             <h1 className="text-2xl font-bold text-slate-800">Statistiques</h1>
             <p className="mt-1 text-sm text-slate-400">Vision d'ensemble de vos finances.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <select
               value={viewMode}
               onChange={(e) => setViewMode(e.target.value)}
