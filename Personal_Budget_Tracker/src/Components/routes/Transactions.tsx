@@ -4,56 +4,48 @@ import { useBudget } from '../../context/BudgetContext';
 import { CATEGORIES, getCategoryById } from '../../data/categories';
 import CategoryIcon from '../ui/CategoryIcon';
 import TransactionModal from '../ui/TransactionModal';
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
+import { isInPeriod, Transaction } from '../../utils/formatters';
 
 const PAGE_SIZE = 10;
 
-const PERIODES = [
+type Periode = 'mois' | 'trimestre' | 'annee' | 'tout';
+
+const PERIODES: { label: string; value: Periode }[] = [
   { label: 'Ce mois',      value: 'mois'      },
   { label: 'Ce trimestre', value: 'trimestre' },
   { label: 'Cette année',  value: 'annee'     },
   { label: 'Tout',         value: 'tout'      },
 ];
 
-function isInPeriod(dateStr: string, periode: string): boolean {
-  const d    = new Date(dateStr);
-  const now  = new Date();
-  const y    = now.getFullYear();
-  const m    = now.getMonth();
-  if (periode === 'mois')     return d.getFullYear() === y && d.getMonth() === m;
-  if (periode === 'trimestre'){
-    const q = Math.floor(m / 3);
-    const dq = Math.floor(d.getMonth() / 3);
-    return d.getFullYear() === y && dq === q;
-  }
-  if (periode === 'annee')    return d.getFullYear() === y;
-  return true; // tout
-}
-
 const Transactions: React.FC = () => {
-  const { transactions, supprimerTransaction } = useBudget();
+  const { transactions, supprimerTransaction, formatMontant } = useBudget();
 
   // ── Filtres ──
-  const [recherche,  setRecherche]  = useState('');
-  const [categFil,   setCategFil]   = useState('toutes');
-  const [typeFil,    setTypeFil]    = useState('tous');
-  const [periode,    setPeriode]    = useState('mois');
-  const [page,       setPage]       = useState(1);
+  const [recherche, setRecherche] = useState('');
+  const [categFil,  setCategFil]  = useState('toutes');
+  const [typeFil,   setTypeFil]   = useState('tous');
+  const [periode,   setPeriode]   = useState<Periode>('mois');
+  const [page,      setPage]      = useState(1);
 
   // ── Modal ──
-  const [modalOpen,  setModalOpen]  = useState(false);
-  const [toEdit,     setToEdit]     = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [toEdit,    setToEdit]    = useState<Transaction | null>(null);
 
   // ── Confirmation suppression ──
-  const [toDelete,   setToDelete]   = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<string | null>(null);
 
   const openNew  = () => { setToEdit(null);  setModalOpen(true); };
-  const openEdit = (t: any) => { setToEdit(t); setModalOpen(true); };
+  const openEdit = (t: Transaction) => { setToEdit(t); setModalOpen(true); };
 
   const confirmerSuppression = (id: string) => setToDelete(id);
-  const executerSuppression  = () => { if (toDelete) { supprimerTransaction(toDelete); setToDelete(null); } };
+  const executerSuppression  = () => {
+    if (toDelete) { supprimerTransaction(toDelete); setToDelete(null); }
+  };
+
+  // Réinitialise la page à chaque changement de filtre
+  function handleFilter<T>(setter: React.Dispatch<React.SetStateAction<T>>) {
+    return (val: T) => { setter(val); setPage(1); };
+  }
 
   // ── Transactions filtrées ──
   const filtrees = useMemo(() => {
@@ -65,13 +57,9 @@ const Transactions: React.FC = () => {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions, periode, categFil, typeFil, recherche]);
 
-  const totalPages = Math.max(1, Math.ceil(filtrees.length / PAGE_SIZE));
+  const totalPages  = Math.max(1, Math.ceil(filtrees.length / PAGE_SIZE));
   const pageCurrent = Math.min(page, totalPages);
   const paginated   = filtrees.slice((pageCurrent - 1) * PAGE_SIZE, pageCurrent * PAGE_SIZE);
-
-  // Réinitialiser la page quand les filtres changent
-  const handleFilterChange = (setter: React.Dispatch<React.SetStateAction<any>>) =>
-    (val: any) => { setter(val); setPage(1); };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -81,7 +69,9 @@ const Transactions: React.FC = () => {
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Transactions</h1>
-            <p className="mt-0.5 text-sm text-slate-400">{filtrees.length} entrée{filtrees.length > 1 ? 's' : ''} ce mois-ci</p>
+            <p className="mt-0.5 text-sm text-slate-400">
+              {filtrees.length} entrée{filtrees.length > 1 ? 's' : ''} sur la période
+            </p>
           </div>
           <button
             onClick={openNew}
@@ -94,7 +84,6 @@ const Transactions: React.FC = () => {
 
         {/* ── Filtres ── */}
         <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-100">
-          {/* Ligne 1 : recherche + dropdowns */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* Recherche */}
             <div className="relative flex-1">
@@ -110,7 +99,7 @@ const Transactions: React.FC = () => {
             {/* Catégorie */}
             <select
               value={categFil}
-              onChange={(e) => handleFilterChange(setCategFil)(e.target.value)}
+              onChange={(e) => handleFilter(setCategFil)(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-sky-400 focus:outline-none"
             >
               <option value="toutes">Toutes les catégories</option>
@@ -121,7 +110,7 @@ const Transactions: React.FC = () => {
             {/* Type */}
             <select
               value={typeFil}
-              onChange={(e) => handleFilterChange(setTypeFil)(e.target.value)}
+              onChange={(e) => handleFilter(setTypeFil)(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-sky-400 focus:outline-none"
             >
               <option value="tous">Tous les types</option>
@@ -130,12 +119,12 @@ const Transactions: React.FC = () => {
             </select>
           </div>
 
-          {/* Ligne 2 : période */}
+          {/* Période */}
           <div className="mt-3 flex flex-wrap gap-2">
             {PERIODES.map((p) => (
               <button
                 key={p.value}
-                onClick={() => handleFilterChange(setPeriode)(p.value)}
+                onClick={() => handleFilter(setPeriode)(p.value)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                   periode === p.value
                     ? 'bg-sky-500 text-white shadow-sm'
@@ -195,7 +184,7 @@ const Transactions: React.FC = () => {
                         t.type === 'revenu' ? 'text-emerald-500' : 'text-red-500'
                       }`}
                     >
-                      {t.type === 'revenu' ? '+' : '-'}{fmt(t.montant)}
+                      {t.type === 'revenu' ? '+' : '-'}{formatMontant(t.montant)}
                     </span>
 
                     {/* Actions */}

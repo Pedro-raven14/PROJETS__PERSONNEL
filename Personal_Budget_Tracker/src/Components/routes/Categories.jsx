@@ -2,25 +2,31 @@ import React, { useMemo } from 'react';
 import { useBudget } from '../../context/BudgetContext';
 import { BUDGET_CATEGORIES, CATEGORIES, getCategoryById } from '../../data/categories';
 import CategoryIcon from '../ui/CategoryIcon';
-
-const fmt = (n) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
+import { filterByMonth } from '../../utils/formatters';
 
 const Categories = () => {
-  const { transactions, budgets } = useBudget();
+  const { transactions, budgets, formatMontant } = useBudget();
 
-  const now       = new Date();
-  const annee     = now.getFullYear();
-  const mois      = now.getMonth();
+  const now   = new Date();
+  const annee = now.getFullYear();
+  const mois  = now.getMonth();
 
   // Dépenses du mois par catégorie
   const depensesParCategorie = useMemo(() => {
     const map = {};
-    transactions
-      .filter((t) => {
-        const d = new Date(t.date);
-        return t.type === 'depense' && d.getFullYear() === annee && d.getMonth() === mois;
-      })
+    filterByMonth(transactions, annee, mois)
+      .filter((t) => t.type === 'depense')
+      .forEach((t) => {
+        map[t.categorie] = (map[t.categorie] ?? 0) + t.montant;
+      });
+    return map;
+  }, [transactions, annee, mois]);
+
+  // Revenus du mois par catégorie
+  const revenusParCategorie = useMemo(() => {
+    const map = {};
+    filterByMonth(transactions, annee, mois)
+      .filter((t) => t.type === 'revenu')
       .forEach((t) => {
         map[t.categorie] = (map[t.categorie] ?? 0) + t.montant;
       });
@@ -36,16 +42,10 @@ const Categories = () => {
   });
 
   // Catégories de revenus
-  const cartesRevenu = CATEGORIES.filter((c) => c.type === 'revenu').map((cat) => {
-    const total = transactions
-      .filter((t) => {
-        const d = new Date(t.date);
-        return t.type === 'revenu' && t.categorie === cat.id &&
-               d.getFullYear() === annee && d.getMonth() === mois;
-      })
-      .reduce((s, t) => s + t.montant, 0);
-    return { ...cat, total };
-  });
+  const cartesRevenu = CATEGORIES.filter((c) => c.type === 'revenu').map((cat) => ({
+    ...cat,
+    total: revenusParCategorie[cat.id] ?? 0,
+  }));
 
   const barColor = (pct) => {
     if (pct >= 100) return 'bg-red-500';
@@ -76,7 +76,7 @@ const Categories = () => {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800">{cat.label}</p>
                   <p className="text-xs text-slate-400">
-                    {cat.budget > 0 ? `Budget ${fmt(cat.budget)}` : 'Pas de budget défini'}
+                    {cat.budget > 0 ? `Budget ${formatMontant(cat.budget)}` : 'Pas de budget défini'}
                   </p>
                 </div>
                 {cat.pct >= 100 && cat.budget > 0 && (
@@ -87,7 +87,7 @@ const Categories = () => {
               </div>
 
               <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-slate-600">{fmt(cat.depense)} dépensés</span>
+                <span className="text-slate-600">{formatMontant(cat.depense)} dépensés</span>
                 {cat.budget > 0 && (
                   <span
                     className={`font-semibold ${
@@ -126,7 +126,7 @@ const Categories = () => {
                   <p className="text-xs text-slate-400">Revenu</p>
                 </div>
                 {cat.total > 0 && (
-                  <span className="font-semibold text-emerald-500">{fmt(cat.total)}</span>
+                  <span className="font-semibold text-emerald-500">{formatMontant(cat.total)}</span>
                 )}
               </div>
             </div>

@@ -2,15 +2,13 @@ import React, { useState } from 'react';
 import { useBudget } from '../../context/BudgetContext';
 import { BUDGET_CATEGORIES } from '../../data/categories';
 import CategoryIcon from '../ui/CategoryIcon';
-
-const fmt = (n) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
+import { filterByMonth } from '../../utils/formatters';
 
 // Slider avec barre de progression colorée
-const BudgetSlider = ({ cat, depense, budget, onChange }) => {
-  const pct = budget > 0 ? Math.min(Math.round((depense / budget) * 100), 100) : 0;
+const BudgetSlider = ({ cat, depense, budget, onChange, formatMontant }) => {
+  const pct      = budget > 0 ? Math.min(Math.round((depense / budget) * 100), 100) : 0;
   const barColor = pct >= 100 ? '#EF4444' : pct >= 80 ? '#F59E0B' : '#0EA5E9';
-  const MAX = 5000;
+  const MAX      = 5000;
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-100">
@@ -20,7 +18,7 @@ const BudgetSlider = ({ cat, depense, budget, onChange }) => {
           <div className="flex items-center justify-between">
             <span className="font-medium text-slate-800">{cat.label}</span>
             <span className="text-sm text-slate-500">
-              {fmt(depense)} / {fmt(budget)} · {pct}%
+              {formatMontant(depense)} / {formatMontant(budget)} · {pct}%
             </span>
           </div>
         </div>
@@ -60,24 +58,21 @@ const BudgetSlider = ({ cat, depense, budget, onChange }) => {
 };
 
 const Parametres = () => {
-  const { budgets, preferences, mettreAJourBudget, mettreAJourPreferences, transactions } = useBudget();
+  const {
+    budgets, preferences, transactions,
+    mettreAJourBudget, mettreAJourPreferences, formatMontant,
+  } = useBudget();
   const [saved, setSaved] = useState(false);
 
   // Dépenses du mois par catégorie
   const now   = new Date();
-  const annee = now.getFullYear();
-  const mois  = now.getMonth();
   const depensesMap = {};
-  transactions
-    .filter((t) => {
-      const d = new Date(t.date);
-      return t.type === 'depense' && d.getFullYear() === annee && d.getMonth() === mois;
-    })
+  filterByMonth(transactions, now.getFullYear(), now.getMonth())
+    .filter((t) => t.type === 'depense')
     .forEach((t) => { depensesMap[t.categorie] = (depensesMap[t.categorie] ?? 0) + t.montant; });
 
   const handleBudgetChange = (id, val) => mettreAJourBudget(id, val);
-
-  const handlePrefChange = (key, val) => mettreAJourPreferences({ [key]: val });
+  const handlePrefChange   = (key, val) => mettreAJourPreferences({ [key]: val });
 
   const handleSave = () => {
     setSaved(true);
@@ -108,6 +103,7 @@ const Parametres = () => {
                   depense={depensesMap[cat.id] ?? 0}
                   budget={budgets[cat.id] ?? 0}
                   onChange={handleBudgetChange}
+                  formatMontant={formatMontant}
                 />
               ))}
             </div>

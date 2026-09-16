@@ -6,37 +6,30 @@ import {
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+  ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import { useBudget } from '../../context/BudgetContext';
-import { getCategoryById, BUDGET_CATEGORIES } from '../../data/categories';
+import { getCategoryById } from '../../data/categories';
 import CategoryIcon from '../ui/CategoryIcon';
-
-// ── Formatage monétaire ──────────────────────────────────────
-const fmt = (n) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
+import { filterByMonth, prevMonth, buildMonthlyData } from '../../utils/formatters';
 
 // ── Couleurs du donut ────────────────────────────────────────
 const DONUT_COLORS = [
   '#8B5CF6','#10B981','#0EA5E9','#F59E0B','#EC4899','#EF4444','#6366F1','#F97316',
 ];
 
-// ── Utilitaire mois ─────────────────────────────────────────
-const MOIS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-
 const Dashboard = () => {
-  const { transactions, preferences } = useBudget();
+  const { transactions, preferences, formatMontant } = useBudget();
 
-  const now         = new Date();
-  const anneeActu   = now.getFullYear();
-  const moisActu    = now.getMonth(); // 0-indexed
+  const now        = new Date();
+  const anneeActu  = now.getFullYear();
+  const moisActu   = now.getMonth();
 
   // ── Transactions du mois courant ───────────────────────────
-  const txMois = useMemo(() =>
-    transactions.filter((t) => {
-      const d = new Date(t.date);
-      return d.getFullYear() === anneeActu && d.getMonth() === moisActu;
-    }), [transactions, anneeActu, moisActu]);
+  const txMois = useMemo(
+    () => filterByMonth(transactions, anneeActu, moisActu),
+    [transactions, anneeActu, moisActu],
+  );
 
   // ── KPIs ──────────────────────────────────────────────────
   const revenusMois  = useMemo(() => txMois.filter((t) => t.type === 'revenu').reduce((s, t) => s + t.montant, 0),  [txMois]);
@@ -46,13 +39,11 @@ const Dashboard = () => {
   const tauxEpargne  = revenusMois > 0 ? Math.round((epargneMois / revenusMois) * 100) : 0;
 
   // ── Transactions du mois précédent (pour la tendance) ─────
-  const prevMois  = moisActu === 0 ? 11 : moisActu - 1;
-  const prevAnnee = moisActu === 0 ? anneeActu - 1 : anneeActu;
-  const txPrevMois = useMemo(() =>
-    transactions.filter((t) => {
-      const d = new Date(t.date);
-      return d.getFullYear() === prevAnnee && d.getMonth() === prevMois;
-    }), [transactions, prevMois, prevAnnee]);
+  const { annee: prevAnnee, mois: prevMois } = prevMonth(anneeActu, moisActu);
+  const txPrevMois = useMemo(
+    () => filterByMonth(transactions, prevAnnee, prevMois),
+    [transactions, prevAnnee, prevMois],
+  );
   const soldePrevMois = useMemo(() => {
     const r = txPrevMois.filter((t) => t.type === 'revenu').reduce((s, t) => s + t.montant, 0);
     const d = txPrevMois.filter((t) => t.type === 'depense').reduce((s, t) => s + t.montant, 0);
@@ -63,21 +54,10 @@ const Dashboard = () => {
     : 0;
 
   // ── Graphique courbes 6 derniers mois ─────────────────────
-  const chartCourbes = useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => {
-      const offset = 5 - i;
-      let m = moisActu - offset;
-      let y = anneeActu;
-      if (m < 0) { m += 12; y -= 1; }
-      const mTx = transactions.filter((t) => {
-        const d = new Date(t.date);
-        return d.getFullYear() === y && d.getMonth() === m;
-      });
-      const revenus  = mTx.filter((t) => t.type === 'revenu').reduce((s, t) => s + t.montant, 0);
-      const depenses = mTx.filter((t) => t.type === 'depense').reduce((s, t) => s + t.montant, 0);
-      return { mois: MOIS_FR[m], revenus, depenses };
-    });
-  }, [transactions, moisActu, anneeActu]);
+  const chartCourbes = useMemo(
+    () => buildMonthlyData(transactions, anneeActu, moisActu, 6),
+    [transactions, anneeActu, moisActu],
+  );
 
   // ── Donut dépenses par catégorie ──────────────────────────
   const chartDonut = useMemo(() => {
@@ -95,7 +75,7 @@ const Dashboard = () => {
     [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5),
     [transactions]);
 
-  const nbRevenusMois = txMois.filter((t) => t.type === 'revenu').length;
+  const nbRevenusMois  = txMois.filter((t) => t.type === 'revenu').length;
   const nbDepensesMois = txMois.filter((t) => t.type === 'depense').length;
 
   // ── Tooltip personnalisé courbes ──────────────────────────
@@ -106,7 +86,7 @@ const Dashboard = () => {
         <p className="font-semibold text-slate-700 mb-1">{label}</p>
         {payload.map((p) => (
           <p key={p.dataKey} style={{ color: p.color }}>
-            {p.dataKey === 'revenus' ? 'Revenus' : 'Dépenses'} : {fmt(p.value)}
+            {p.dataKey === 'revenus' ? 'Revenus' : 'Dépenses'} : {formatMontant(p.value)}
           </p>
         ))}
       </div>
@@ -133,7 +113,7 @@ const Dashboard = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-slate-500">Solde total</p>
-                <p className="mt-1 text-3xl font-bold text-slate-800">{fmt(soldeMois)}</p>
+                <p className="mt-1 text-3xl font-bold text-slate-800">{formatMontant(soldeMois)}</p>
               </div>
               <div className="rounded-xl bg-sky-50 p-2.5 text-sky-500">
                 <Wallet className="h-5 w-5" />
@@ -150,7 +130,7 @@ const Dashboard = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-slate-500">Revenus</p>
-                <p className="mt-1 text-3xl font-bold text-slate-800">{fmt(revenusMois)}</p>
+                <p className="mt-1 text-3xl font-bold text-slate-800">{formatMontant(revenusMois)}</p>
               </div>
               <div className="rounded-xl bg-emerald-50 p-2.5 text-emerald-500">
                 <ArrowUpRight className="h-5 w-5" />
@@ -166,7 +146,7 @@ const Dashboard = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-slate-500">Dépenses</p>
-                <p className="mt-1 text-3xl font-bold text-slate-800">{fmt(depensesMois)}</p>
+                <p className="mt-1 text-3xl font-bold text-slate-800">{formatMontant(depensesMois)}</p>
               </div>
               <div className="rounded-xl bg-red-50 p-2.5 text-red-500">
                 <ArrowDownRight className="h-5 w-5" />
@@ -182,7 +162,7 @@ const Dashboard = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-slate-500">Épargne du mois</p>
-                <p className="mt-1 text-3xl font-bold text-slate-800">{fmt(epargneMois)}</p>
+                <p className="mt-1 text-3xl font-bold text-slate-800">{formatMontant(epargneMois)}</p>
               </div>
               <div className="rounded-xl bg-violet-50 p-2.5 text-violet-500">
                 <PiggyBank className="h-5 w-5" />
@@ -258,7 +238,7 @@ const Dashboard = () => {
                         <Cell key={entry.id} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v) => fmt(v)} />
+                    <Tooltip formatter={(v) => formatMontant(v)} />
                   </PieChart>
                 </ResponsiveContainer>
                 <ul className="mt-2 space-y-1">
@@ -271,7 +251,7 @@ const Dashboard = () => {
                         />
                         <span className="text-slate-600">{item.label}</span>
                       </div>
-                      <span className="font-medium text-slate-700">{fmt(item.montant)}</span>
+                      <span className="font-medium text-slate-700">{formatMontant(item.montant)}</span>
                     </li>
                   ))}
                 </ul>
@@ -293,7 +273,7 @@ const Dashboard = () => {
           </div>
           <ul className="divide-y divide-slate-50">
             {dernieresTransactions.map((t) => {
-              const cat = getCategoryById(t.categorie);
+              const cat     = getCategoryById(t.categorie);
               const dateStr = new Date(t.date).toLocaleDateString('fr-FR');
               return (
                 <li key={t.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition">
@@ -317,7 +297,7 @@ const Dashboard = () => {
                         t.type === 'revenu' ? 'text-emerald-500' : 'text-slate-700'
                       }`}
                     >
-                      {t.type === 'revenu' ? '+' : '-'}{fmt(t.montant)}
+                      {t.type === 'revenu' ? '+' : '-'}{formatMontant(t.montant)}
                     </span>
                   </div>
                 </li>

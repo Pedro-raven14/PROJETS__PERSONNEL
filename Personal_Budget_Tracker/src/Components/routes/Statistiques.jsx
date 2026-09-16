@@ -6,15 +6,12 @@ import {
 import { useBudget } from '../../context/BudgetContext';
 import { getCategoryById } from '../../data/categories';
 import CategoryIcon from '../ui/CategoryIcon';
+import { filterByMonth, buildYearlyData, MOIS_FR } from '../../utils/formatters';
 
-const fmt = (n) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
-
-const MOIS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 const DONUT_COLORS = ['#8B5CF6','#10B981','#0EA5E9','#F59E0B','#EC4899','#EF4444','#6366F1','#F97316'];
 
 const Statistiques = () => {
-  const { transactions } = useBudget();
+  const { transactions, formatMontant } = useBudget();
 
   const now = new Date();
   const [viewMode, setViewMode] = useState('mois');   // mois | trimestre | annee
@@ -25,7 +22,7 @@ const Statistiques = () => {
     return transactions.filter((t) => {
       const d = new Date(t.date);
       if (d.getFullYear() !== annee) return false;
-      if (viewMode === 'mois')      return d.getMonth() === now.getMonth();
+      if (viewMode === 'mois')       return d.getMonth() === now.getMonth();
       if (viewMode === 'trimestre') {
         const q = Math.floor(now.getMonth() / 3);
         return Math.floor(d.getMonth() / 3) === q;
@@ -53,20 +50,11 @@ const Statistiques = () => {
 
   const totalDepenses = donutData.reduce((s, d) => s + d.montant, 0);
 
-  // ── Barres mensuelles ──────────────────────────────────────
-  const barData = useMemo(() => {
-    return Array.from({ length: 12 }, (_, m) => {
-      const mTx = transactions.filter((t) => {
-        const d = new Date(t.date);
-        return d.getFullYear() === annee && d.getMonth() === m;
-      });
-      return {
-        mois:     MOIS_FR[m],
-        Revenus:  mTx.filter((t) => t.type === 'revenu').reduce((s, t) => s + t.montant, 0),
-        Dépenses: mTx.filter((t) => t.type === 'depense').reduce((s, t) => s + t.montant, 0),
-      };
-    });
-  }, [transactions, annee]);
+  // ── Barres mensuelles (12 mois de l'année) ─────────────────
+  const barData = useMemo(
+    () => buildYearlyData(transactions, annee),
+    [transactions, annee],
+  );
 
   // ── Top 5 catégories ───────────────────────────────────────
   const top5 = donutData.slice(0, 5);
@@ -78,7 +66,7 @@ const Statistiques = () => {
     return (
       <div className="rounded-xl bg-white p-3 shadow-lg border border-slate-100 text-sm">
         <p className="font-semibold text-slate-700">{item.label}</p>
-        <p className="text-slate-500">{fmt(item.montant)} · {item.pct}%</p>
+        <p className="text-slate-500">{formatMontant(item.montant)} · {item.pct}%</p>
       </div>
     );
   };
@@ -127,7 +115,7 @@ const Statistiques = () => {
           {/* Donut */}
           <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
             <h2 className="mb-1 font-semibold text-slate-800">Répartition des dépenses</h2>
-            <p className="mb-4 text-xs text-slate-400">Total {fmt(totalDepenses)}</p>
+            <p className="mb-4 text-xs text-slate-400">Total {formatMontant(totalDepenses)}</p>
             {donutData.length === 0 ? (
               <div className="flex h-64 items-center justify-center text-slate-400">Aucune dépense</div>
             ) : (
@@ -168,13 +156,13 @@ const Statistiques = () => {
           {/* Barres */}
           <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
             <h2 className="mb-1 font-semibold text-slate-800">Évolution mensuelle</h2>
-            <p className="mb-4 text-xs text-slate-400">Revenus et dépenses empilés</p>
+            <p className="mb-4 text-xs text-slate-400">Revenus et dépenses sur {annee}</p>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={barData} margin={{ top: 0, right: 5, left: -15, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="mois" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(v) => fmt(v)} />
+                <Tooltip formatter={(v) => formatMontant(v)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="Revenus"  fill="#10B981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Dépenses" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
@@ -186,7 +174,7 @@ const Statistiques = () => {
         {/* ── Top 5 ── */}
         <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
           <h2 className="mb-1 font-semibold text-slate-800">Top 5 des catégories</h2>
-          <p className="mb-6 text-xs text-slate-400">Les plus dépensières ce mois-ci</p>
+          <p className="mb-6 text-xs text-slate-400">Les plus dépensières sur la période</p>
 
           {top5.length === 0 ? (
             <p className="text-slate-400 text-sm">Aucune dépense sur cette période.</p>
@@ -199,7 +187,7 @@ const Statistiques = () => {
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-sm font-medium text-slate-700">{item.label}</span>
                       <span className="text-sm font-semibold text-slate-700">
-                        {fmt(item.montant)} · {item.pct}%
+                        {formatMontant(item.montant)} · {item.pct}%
                       </span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-slate-100">

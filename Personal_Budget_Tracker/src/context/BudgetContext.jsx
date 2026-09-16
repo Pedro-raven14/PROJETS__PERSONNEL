@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BUDGET_CATEGORIES } from '../data/categories';
+import { fmt as fmtUtil, filterByMonth } from '../utils/formatters';
 
 // ──────────────────────────────────────────────────────────────
 // Données de démonstration pour avoir quelque chose à l'écran
@@ -116,18 +117,21 @@ export function BudgetProvider({ children }) {
   };
 
   // ── Calculs utilitaires ──
-  const getTransactionsDuMois = (annee, mois) => {
-    return transactions.filter((t) => {
-      const d = new Date(t.date);
-      return d.getFullYear() === annee && d.getMonth() === mois;
-    });
-  };
 
-  const getSoldeTotal = () => {
-    return transactions.reduce((acc, t) => {
-      return t.type === 'revenu' ? acc + t.montant : acc - t.montant;
-    }, 0);
-  };
+  /** Filtre les transactions d'un mois/année donné (délègue à filterByMonth). */
+  const getTransactionsDuMois = (annee, mois) =>
+    filterByMonth(transactions, annee, mois);
+
+  const getSoldeTotal = () =>
+    transactions.reduce((acc, t) =>
+      t.type === 'revenu' ? acc + t.montant : acc - t.montant, 0);
+
+  /**
+   * Formate un montant en utilisant la devise choisie par l'utilisateur.
+   * Exposé dans le contexte pour éviter d'avoir à passer `preferences.devise`
+   * partout dans les composants.
+   */
+  const formatMontant = (n) => fmtUtil(n, preferences.devise);
 
   return (
     <BudgetContext.Provider
@@ -142,6 +146,7 @@ export function BudgetProvider({ children }) {
         mettreAJourPreferences,
         getTransactionsDuMois,
         getSoldeTotal,
+        formatMontant,
       }}
     >
       {children}
