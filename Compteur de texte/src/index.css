@@ -21,20 +21,33 @@
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  #root {
+    padding: 2rem;
+  }
 }
 
 .box {
   background-color: #171717;
   border-radius: 8px;
   border: 1px solid #272727;
-  padding: 24px;
+  padding: 16px;
 }
 
 .boxi {
   border-radius: 8px;
   border: 1px solid #272727;
-  padding: 24px;
+  padding: 16px;
+}
+
+@media (min-width: 640px) {
+  .box,
+  .boxi {
+    padding: 24px;
+  }
 }
 
 .color-primary {

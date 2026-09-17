@@ -21,7 +21,7 @@ const Input = ({ add }) => {
         <Smile size={30} color="green" />
       </h2>
       <form
-        className="mt-5 flex justify-between gap-5 items-center"
+        className="mt-5 flex flex-col sm:flex-row justify-between gap-3 items-stretch sm:items-center"
         action=""
         onSubmit={hre}
       >
@@ -32,7 +32,7 @@ const Input = ({ add }) => {
           type="text"
           placeholder="Entre ta tâche ici"
         />
-        <button className="button-primary" type="submit">
+        <button className="button-primary shrink-0" type="submit">
           Ajouter
         </button>
       </form>

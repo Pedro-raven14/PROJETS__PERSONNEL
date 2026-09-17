@@ -35,42 +35,42 @@ const Compteurs = ({ espace, texte }) => {
   }, [texte]);
 
   return (
-    <div className="mt-8 px-35">
+    <div className="mt-8 px-4 md:px-8">
       {/* Ligne 1 : lettres, mots, phrases */}
-      <div className="flex justify-between items-center gap-10">
-        <div className="boxi bg-secondary flex-1">
-          <p className="font-bold text-4xl">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="boxi bg-secondary">
+          <p className="font-bold text-3xl sm:text-4xl">
             {espace
               ? texte.length.toString().padStart(2, "0")
               : sansespace.length.toString().padStart(2, "0")}
           </p>
-          <p className="mt-4 font-bold text-3xl">Total de lettres</p>
+          <p className="mt-3 font-bold text-xl sm:text-3xl">Total de lettres</p>
         </div>
-        <div className="boxi bg-warning flex-1">
-          <p className="font-bold text-4xl">
+        <div className="boxi bg-warning">
+          <p className="font-bold text-3xl sm:text-4xl">
             {mots.length.toString().padStart(2, "0")}
           </p>
-          <p className="mt-4 font-bold text-3xl">Total de mots</p>
+          <p className="mt-3 font-bold text-xl sm:text-3xl">Total de mots</p>
         </div>
-        <div className="boxi bg-accent flex-1">
-          <p className="font-bold text-4xl">
+        <div className="boxi bg-accent">
+          <p className="font-bold text-3xl sm:text-4xl">
             {phrases.length.toString().padStart(2, "0")}
           </p>
-          <p className="mt-4 font-bold text-3xl">Total de phrases</p>
+          <p className="mt-3 font-bold text-xl sm:text-3xl">Total de phrases</p>
         </div>
       </div>
 
       {/* Ligne 2 : paragraphes, temps de lecture */}
-      <div className="flex justify-between items-center gap-10 mt-6">
-        <div className="boxi bg-info flex-1">
-          <p className="font-bold text-4xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+        <div className="boxi bg-info">
+          <p className="font-bold text-3xl sm:text-4xl">
             {paragraphes.length.toString().padStart(2, "0")}
           </p>
-          <p className="mt-4 font-bold text-3xl">Total de paragraphes</p>
+          <p className="mt-3 font-bold text-xl sm:text-3xl">Total de paragraphes</p>
         </div>
-        <div className="boxi bg-success flex-1">
-          <p className="font-bold text-4xl">{tempsLecture}</p>
-          <p className="mt-4 font-bold text-3xl">Temps de lecture</p>
+        <div className="boxi bg-success">
+          <p className="font-bold text-3xl sm:text-4xl">{tempsLecture}</p>
+          <p className="mt-3 font-bold text-xl sm:text-3xl">Temps de lecture</p>
         </div>
       </div>
     </div>
