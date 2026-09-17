@@ -100,7 +100,7 @@ export default function Header() {
               onMouseLeave={e => e.currentTarget.style.backgroundColor = "#FF6B35"}
             >
               <PlusCircle size={15} />
-              Créer une recette
+              <span className="create-btn-label">Créer une recette</span>
             </Link>
 
             {currentUser ? (
@@ -128,7 +128,8 @@ export default function Header() {
                       borderRadius: "1rem",
                       boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
                       border: "1px solid #f3f4f6",
-                      zIndex: 40, overflow: "hidden"
+                      zIndex: 40, overflow: "hidden",
+                      maxWidth: "calc(100vw - 1rem)"
                     }}>
                       <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid #f3f4f6" }}>
                         <p style={{ fontWeight: 600, fontSize: "0.875rem", color: "#111827" }}>

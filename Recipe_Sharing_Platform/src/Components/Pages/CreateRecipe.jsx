@@ -211,7 +211,7 @@ export default function CreateRecipe() {
 
         {/* ── Temps & portions ────────────────────────────────── */}
         <Section title="Temps & portions">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: "1rem" }}>
             {[
               { label: "Préparation (min)", field: "prepTime" },
               { label: "Cuisson (min)", field: "cookTime" },
@@ -228,7 +228,7 @@ export default function CreateRecipe() {
 
         {/* ── Difficulté ──────────────────────────────────────── */}
         <Section title="Difficulté">
-          <div style={{ display: "flex", gap: "0.75rem" }}>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             {DIFFICULTIES.map(d => (
               <button key={d} type="button" onClick={() => setField("difficulty", d)} style={{
                 flex: 1, padding: "0.625rem", borderRadius: "9999px",
@@ -372,7 +372,7 @@ export default function CreateRecipe() {
         </Section>
 
         {/* ── Boutons ─────────────────────────────────────────── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.5rem", flexWrap: "wrap", gap: "0.75rem" }}>
           <button type="button" onClick={() => handleSubmit("draft")} disabled={submitting}
             style={{
               border: "1px solid #e5e7eb", borderRadius: "9999px",

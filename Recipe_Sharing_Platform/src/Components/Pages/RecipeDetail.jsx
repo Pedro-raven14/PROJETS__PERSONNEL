@@ -111,7 +111,8 @@ export default function RecipeDetail() {
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <div style={{
-        position: "relative", width: "100%", height: 360,
+        position: "relative", width: "100%",
+        minHeight: 260, maxHeight: 420, height: "35vw",
         borderRadius: "1.5rem", overflow: "hidden",
         marginBottom: "2rem",
         backgroundColor: recipe.bgColor || "#FF6B35",
@@ -438,9 +439,9 @@ export default function RecipeDetail() {
           <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#111827", marginBottom: "1.5rem" }}>
             Vous aimerez peut-être aussi
           </h2>
-          <div style={{
+          <div className="recipe-grid" style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))",
             gap: "1.25rem"
           }}>
             {related.map(r => <RecipeCard key={r.id} recipe={r} />)}

@@ -205,9 +205,9 @@ export default function RecipesPage() {
 
           {/* Grille */}
           {loading ? (
-            <div style={{
+            <div className="recipe-grid" style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))",
               gap: "1.25rem"
             }}>
               {Array.from({ length: 9 }).map((_, i) => (
@@ -222,9 +222,9 @@ export default function RecipesPage() {
               ))}
             </div>
           ) : paginated.length > 0 ? (
-            <div style={{
+            <div className="recipe-grid" style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))",
               gap: "1.25rem"
             }}>
               {paginated.map(recipe => (

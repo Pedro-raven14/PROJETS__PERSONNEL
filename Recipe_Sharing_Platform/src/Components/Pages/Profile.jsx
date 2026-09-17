@@ -206,7 +206,7 @@ export default function Profile() {
         </div>
 
         {/* ── Onglets ───────────────────────────────────────────── */}
-        <div style={{
+        <div className="profile-tabs" style={{
           display: "flex", gap: 0,
           borderBottom: "2px solid #e5e7eb",
           marginTop: "1.5rem", marginBottom: "1.5rem",
@@ -262,9 +262,9 @@ export default function Profile() {
                 subtitle="Créez votre première recette !"
                 cta={isOwn ? { to: "/creer-recette", label: "Créer une recette" } : null} />
             ) : (
-              <div style={{
+              <div className="recipe-grid" style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))",
                 gap: "1.25rem",
               }}>
                 {recipes.map(recipe => (
@@ -323,9 +323,9 @@ export default function Profile() {
                 subtitle="Explorez et sauvegardez vos recettes préférées !"
                 cta={{ to: "/recettes", label: "Explorer" }} />
             ) : (
-              <div style={{
+              <div className="recipe-grid" style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))",
                 gap: "1.25rem",
               }}>
                 {favorites.map(recipe => (

@@ -20,6 +20,7 @@ body {
   background-color: #F8F9FA;
   color: #2D3436;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* ── Variables ─────────────────────────────────────────── */
@@ -241,12 +242,18 @@ select.input-field {
   .mobile-search { display: none !important; }
   .mobile-only   { display: none !important; }
   .md-search     { display: flex !important; }
+}
+
+/* Bouton filtres mobile : visible sous 1024px (quand la sidebar desktop est cachée) */
+@media (min-width: 1024px) {
   .mobile-filter-btn { display: none !important; }
 }
 
 @media (max-width: 767px) {
-  .md-search     { display: none !important; }
+  .md-search       { display: none !important; }
   .desktop-sidebar { display: none !important; }
+  /* Header : masquer le texte "Créer une recette", garder l'icône */
+  .create-btn-label { display: none !important; }
 }
 
 @media (min-width: 1024px) {
@@ -265,7 +272,26 @@ select.input-field {
   display: flex !important;
 }
 
+/* Toast : limiter la largeur sur mobile */
+.toast-container {
+  max-width: calc(100vw - 3rem);
+}
+
+/* Onglets profil : scroll horizontal sur mobile */
+.profile-tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.profile-tabs::-webkit-scrollbar { display: none; }
+
 /* ── Profile : actions edit/delete au hover ────────────── */
 div:hover > .card-edit-actions {
   opacity: 1 !important;
+}
+
+/* ── Grilles recettes : évite le dépassement sur très petits écrans ── */
+@media (max-width: 479px) {
+  .recipe-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
