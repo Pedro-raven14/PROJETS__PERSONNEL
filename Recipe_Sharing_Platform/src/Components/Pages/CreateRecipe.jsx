@@ -249,7 +249,7 @@ export default function CreateRecipe() {
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
             {form.ingredients.map((ing, idx) => (
-              <div key={idx} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <div key={idx} className="ingredient-row" style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
                 <GripVertical size={15} color="#d1d5db" style={{ flexShrink: 0 }} />
                 <input type="text" value={ing.quantity}
                   onChange={e => updateIng(idx, "quantity", e.target.value)}
@@ -263,7 +263,8 @@ export default function CreateRecipe() {
                 <input type="text" value={ing.name}
                   onChange={e => updateIng(idx, "name", e.target.value)}
                   placeholder="Nom de l'ingrédient"
-                  style={{ ...inp(false), flex: 1 }} />
+                  className="ingredient-name"
+                  style={{ ...inp(false), flex: 1, minWidth: 120 }} />
                 <button type="button" onClick={() => removeIng(idx)}
                   disabled={form.ingredients.length <= 1}
                   style={{

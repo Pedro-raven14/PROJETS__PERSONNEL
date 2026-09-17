@@ -104,7 +104,7 @@ export default function Header() {
             </Link>
 
             {currentUser ? (
-              <div style={{ position: "relative" }}>
+              <div style={{ position: "relative" }} className="header-auth-links">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   style={{
@@ -174,7 +174,7 @@ export default function Header() {
                 )}
               </div>
             ) : (
-              <>
+              <div className="header-auth-links" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <Link to="/connexion" style={{
                   color: "#374151", padding: "0.5rem 0.875rem",
                   fontSize: "0.875rem", fontWeight: 500,
@@ -191,7 +191,7 @@ export default function Header() {
                 }}>
                   S'inscrire
                 </Link>
-              </>
+              </div>
             )}
 
             {/* Burger mobile */}

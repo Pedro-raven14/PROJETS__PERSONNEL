@@ -313,7 +313,7 @@ export default function RecipeDetail() {
                   onChange={e => setCommentText(e.target.value)}
                   placeholder="Partagez votre avis..."
                   style={{
-                    flex: 1, padding: "0.625rem 1rem",
+                    flex: 1, minWidth: 0, padding: "0.625rem 1rem",
                     borderRadius: "9999px", border: "1px solid #e5e7eb",
                     fontSize: "0.875rem", fontFamily: "Inter, sans-serif",
                     outline: "none"

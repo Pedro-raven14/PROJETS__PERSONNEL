@@ -72,7 +72,7 @@ export default function Register() {
         <div style={{
           backgroundColor: "white", borderRadius: "1.5rem",
           boxShadow: "0 20px 60px rgba(0,0,0,0.1)", padding: "2.5rem"
-        }}>
+        }} className="auth-card">
           {/* Logo */}
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
             <Link to="/" style={{ textDecoration: "none", display: "inline-block", marginBottom: "1rem" }}>

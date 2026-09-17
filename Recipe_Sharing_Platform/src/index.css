@@ -254,6 +254,24 @@ select.input-field {
   .desktop-sidebar { display: none !important; }
   /* Header : masquer le texte "Créer une recette", garder l'icône */
   .create-btn-label { display: none !important; }
+  /* Header : masquer les boutons Connexion/Inscription (déjà dans le menu burger) */
+  .header-auth-links { display: none !important; }
+  /* Auth : réduire le padding de la card sur petits écrans */
+  .auth-card { padding: 1.5rem !important; }
+  /* Hero section : réduire la hauteur minimale */
+  .hero-section { min-height: 360px !important; }
+  /* Profile : card profil centrée sur petits écrans */
+  .profile-card-header { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+  .profile-card-header .profile-stats { justify-content: center !important; }
+  .profile-card-header .profile-actions { width: 100% !important; justify-content: center !important; }
+}
+
+@media (max-width: 479px) {
+  /* Ingrédients : le champ "nom" passe à la ligne (quantité + unité sur ligne 1, nom sur ligne 2) */
+  .ingredient-row { flex-wrap: wrap !important; }
+  .ingredient-name { width: 100% !important; flex: unset !important; }
+  /* Auth : padding encore plus compact sur très petits écrans */
+  .auth-card { padding: 1.25rem !important; }
 }
 
 @media (min-width: 1024px) {

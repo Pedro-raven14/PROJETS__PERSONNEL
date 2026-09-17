@@ -107,7 +107,7 @@ export default function Profile() {
           flexWrap: "wrap",
           position: "relative",
           zIndex: 10,
-        }}>
+        }} className="profile-card-header">
           {/* Avatar */}
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{
@@ -142,7 +142,7 @@ export default function Profile() {
           </div>
 
           {/* Infos */}
-          <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h1 style={{
               fontSize: "1.5rem", fontWeight: 800,
               color: "#111827", marginBottom: "0.15rem"
@@ -159,7 +159,7 @@ export default function Profile() {
             )}
 
             {/* Stats */}
-            <div style={{ display: "flex", gap: "1.5rem", marginTop: "0.875rem" }}>
+            <div className="profile-stats" style={{ display: "flex", gap: "1.5rem", marginTop: "0.875rem" }}>
               {[
                 { value: published.length, label: "Recettes" },
                 { value: "1,2K", label: "Abonnés" },
@@ -181,7 +181,7 @@ export default function Profile() {
           </div>
 
           {/* Boutons */}
-          <div style={{ display: "flex", gap: "0.625rem", flexShrink: 0 }}>
+          <div className="profile-actions" style={{ display: "flex", gap: "0.625rem", flexShrink: 0 }}>
             {isOwn ? (
               <button onClick={() => setActiveTab("settings")} style={{
                 display: "inline-flex", alignItems: "center", gap: "0.375rem",
