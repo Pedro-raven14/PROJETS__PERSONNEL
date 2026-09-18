@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { X, Wallet, CheckCircle, AlertCircle } from "lucide-react";
-import axios from "axios";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { fichePaieService } from "../../../lib/mockService";
 
 type Props = { onClose: () => void; onSuccess: () => void };
 
@@ -13,39 +12,28 @@ const MOIS = [
 
 const GenererFichePaie = ({ onClose, onSuccess }: Props) => {
   const now = new Date();
-  const [mois,      setMois]      = useState(now.getMonth() + 1);   // 1-12
+  const [mois,      setMois]      = useState(now.getMonth() + 1);
   const [annee,     setAnnee]     = useState(now.getFullYear());
   const [heuresSup, setHeuresSup] = useState("");
   const [saving,    setSaving]    = useState(false);
   const [error,     setError]     = useState("");
   const [result,    setResult]    = useState<{ generes: number; ignores: number; erreurs: string[] } | null>(null);
 
-  const token = localStorage.getItem("token");
-
   const periode = `${annee}-${String(mois).padStart(2, "0")}`;
-
-  // Années disponibles : 3 ans en arrière jusqu'à l'année courante
   const annees = Array.from({ length: 4 }, (_, i) => now.getFullYear() - 3 + i);
 
-  const handleGenerer = async () => {
+  const handleGenerer = () => {
     if (heuresSup && (isNaN(Number(heuresSup)) || Number(heuresSup) < 0 || Number(heuresSup) > 200)) {
       setError("Le nombre d'heures supplémentaires doit être compris entre 0 et 200");
       return;
     }
     setSaving(true); setError(""); setResult(null);
     try {
-      const res = await axios.post(
-        `${API_URL}/fiche-paie/generer-tous`,
-        { periode, nb_heures_sup: heuresSup ? Number(heuresSup) : 0 },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      setResult(res.data);
+      const res = fichePaieService.genererTous(periode, heuresSup ? Number(heuresSup) : 0);
+      setResult(res);
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors du traitement de la paie");
-    } finally {
-      setSaving(false);
-    }
+      setError(e?.message || "Erreur lors du traitement de la paie");
+    } finally { setSaving(false); }
   };
 
   return (

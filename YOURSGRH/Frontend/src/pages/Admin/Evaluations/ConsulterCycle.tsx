@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { X, Award, CalendarDays, Users, Star, Loader2, Plus } from "lucide-react";
-import axios from "axios";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { cycleEvaluationService } from "../../../lib/mockService";
 import AjoutEvaluation from "./AjoutEvaluation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -63,20 +62,14 @@ type Props = {
 // ─── Composant ────────────────────────────────────────────────────────────────
 
 const ConsulterCycle = ({ cycleId, onClose }: Props) => {
-  const token = localStorage.getItem("token");
-  const [cycle, setCycle]           = useState<CycleDetail | null>(null);
-  const [loading, setLoading]       = useState(true);
-  const [showAjout, setShowAjout]   = useState(false);
+  const [cycle, setCycle]         = useState<CycleDetail | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [showAjout, setShowAjout] = useState(false);
 
-  const fetchCycle = async () => {
+  const fetchCycle = () => {
     setLoading(true);
-    try {
-      const res = await axios.get(`${API_URL}/cycle-evaluation/${cycleId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCycle(res.data);
-    } catch { /* silencieux */ }
-    finally { setLoading(false); }
+    try { setCycle(cycleEvaluationService.getById(cycleId) as CycleDetail); }
+    catch { /* silencieux */ } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchCycle(); }, [cycleId]);

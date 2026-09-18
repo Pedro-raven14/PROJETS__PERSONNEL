@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   FileText, Eye, Clock, CheckCircle, Search,
-  ArrowLeft, Download, Filter,
+  ArrowLeft, Filter,
 } from "lucide-react";
 import { PageHeader } from "../../../components/element/PageHeader";
-import { API_URL } from "../../../config/api";
+import { contratService } from "../../../lib/mockService";
 
 type Contrat = {
   contratId: number;
@@ -27,77 +26,53 @@ type Contrat = {
   };
 };
 
-// ── Viewer PDF ────────────────────────────────────────────────────────────────
-
-const PdfViewer = ({ contrat, onClose }: { contrat: Contrat; onClose: () => void }) => {
-  const token  = localStorage.getItem("token");
-  const pdfUrl = `${API_URL}/contrat/${contrat.contratId}/document?token=${token}`;
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 110, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0.75rem 1.5rem', backgroundColor: 'var(--color-card)',
-        borderBottom: '1px solid var(--color-border)', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            onClick={onClose}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-muted-foreground)', fontFamily: 'var(--font-display)', fontSize: '0.875rem', padding: '0.375rem 0.5rem', borderRadius: '0.375rem' }}
-          >
-            <ArrowLeft style={{ width: '16px', height: '16px' }} /> Retour
-          </button>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem' }}>
-            {contrat.employee.prenom} {contrat.employee.nom} — {contrat.type} ({contrat.poste})
-          </span>
-        </div>
-        <a
-          href={pdfUrl}
-          download={`contrat_${contrat.employee.nom}_${contrat.type}.pdf`}
-          style={{ ...btnPrimary, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
-        >
-          <Download style={{ width: '14px', height: '14px' }} /> Télécharger
-        </a>
-      </div>
-      <div style={{ flex: 1, backgroundColor: '#525659' }}>
-        <iframe src={pdfUrl} style={{ width: '100%', height: '100%', border: 'none' }} title="Contrat PDF" />
+// ── Viewer PDF — non disponible en mode démo ──────────────────────────────────
+const PdfViewer = ({ contrat, onClose }: { contrat: Contrat; onClose: () => void }) => (
+  <div style={{ position: 'fixed', inset: 0, zIndex: 110, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1.5rem', backgroundColor: 'var(--color-card)', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+      <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-muted-foreground)', fontFamily: 'var(--font-display)', fontSize: '0.875rem', padding: '0.375rem 0.5rem', borderRadius: '0.375rem' }}>
+        <ArrowLeft style={{ width: '16px', height: '16px' }} /> Retour
+      </button>
+      <span style={{ marginLeft: '1rem', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem' }}>
+        {contrat.employee.prenom} {contrat.employee.nom} — {contrat.type} ({contrat.poste})
+      </span>
+    </div>
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#525659' }}>
+      <div style={{ textAlign: 'center', color: 'white' }}>
+        <FileText style={{ width: '3rem', height: '3rem', margin: '0 auto 1rem', opacity: 0.6 }} />
+        <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>PDF non disponible en mode démo</p>
+        <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', opacity: 0.7 }}>Les documents PDF nécessitent le backend</p>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 // ── Page principale ───────────────────────────────────────────────────────────
 
 const STATUTS = ['Tous', 'ACTIF', 'EXPIRE', 'RESILIE'];
 
 const Contrat = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
-
-  const [contrats,       setContrats]       = useState<Contrat[]>([]);
-  const [loading,        setLoading]        = useState(true);
-  const [search,         setSearch]         = useState("");
-  const [filtreStatut,   setFiltreStatut]   = useState("Tous");
+  const [contrats,        setContrats]        = useState<Contrat[]>([]);
+  const [loading,         setLoading]         = useState(true);
+  const [search,          setSearch]          = useState("");
+  const [filtreStatut,    setFiltreStatut]    = useState("Tous");
   const [filtreSignature, setFiltreSignature] = useState<"tous" | "signes" | "non_signes">("tous");
-  const [viewing,        setViewing]        = useState<Contrat | null>(null);
-  const [page,           setPage]           = useState(1);
+  const [viewing,         setViewing]         = useState<Contrat | null>(null);
+  const [page,            setPage]            = useState(1);
   const LIMIT = 20;
 
   useEffect(() => {
-    axios
-      .get(`${API_URL}/contrat/getall?page=1&limit=1000`, { headers })
-      .then((res) => {
-        const data: Contrat[] = res.data.data ?? res.data;
-        // Tri : ACTIF en premier, puis par date_debut décroissante
-        data.sort((a, b) => {
-          if (a.statut === 'ACTIF' && b.statut !== 'ACTIF') return -1;
-          if (b.statut === 'ACTIF' && a.statut !== 'ACTIF') return 1;
-          return new Date(b.date_debut).getTime() - new Date(a.date_debut).getTime();
-        });
-        setContrats(data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    try {
+      const data: Contrat[] = contratService.getAll(1000) as Contrat[];
+      data.sort((a, b) => {
+        if (a.statut === 'ACTIF' && b.statut !== 'ACTIF') return -1;
+        if (b.statut === 'ACTIF' && a.statut !== 'ACTIF') return 1;
+        return new Date(b.date_debut).getTime() - new Date(a.date_debut).getTime();
+      });
+      setContrats(data);
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Filtres

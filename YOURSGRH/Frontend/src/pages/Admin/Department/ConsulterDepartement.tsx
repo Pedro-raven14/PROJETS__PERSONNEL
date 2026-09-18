@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Pencil, Trash2, UserPlus, UserMinus, X, Users } from "lucide-react";
-import axios from "axios";
 
 import { PageHeader } from "../../../components/element/PageHeader";
 import { Input } from "../../../components/UI/Input";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
-import { API_URL } from "../../../config/api";
+import {
+  departementService, equipeService, employeeService,
+} from "../../../lib/mockService";
 
 type EmployeeLight = {
   userId: number;
@@ -140,8 +141,6 @@ const EmpRow = ({ emp, onClick, icon }: { emp: EmployeeLight; onClick: () => voi
 const ConsulterDepartement = () => {
   const { id }   = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const token    = localStorage.getItem("token");
-  const headers  = { Authorization: `Bearer ${token}` };
 
   // Détecter le rôle pour adapter la navigation retour
   const role = (() => {
@@ -166,20 +165,18 @@ const ConsulterDepartement = () => {
   const [error,        setError]        = useState("");
   const [errorManager, setErrorManager] = useState(""); // erreur spécifique au modal manager
 
-  const fetchData = async () => {
+  const fetchData = () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [deptRes, equipesRes, empsRes] = await Promise.all([
-        axios.get(`${API_URL}/departement/${id}`, { headers }),
-        axios.get(`${API_URL}/equipe/departement/${id}`, { headers }),
-        axios.get(`${API_URL}/employee/getall?limit=200`, { headers }),
-      ]);
-      setDept(deptRes.data);
-      setEquipes(equipesRes.data);
-      setAllEmployes(empsRes.data.data ?? empsRes.data);
-    } catch { /* silencieux */ }
-    finally { setLoading(false); }
+      const deptData = departementService.getById(Number(id));
+      setDept(deptData);
+      setEquipes(equipeService.getByDepartement(Number(id)));
+      const empResult = employeeService.getAll(1, 200);
+      setAllEmployes(empResult.data);
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, [id]);
@@ -190,87 +187,74 @@ const ConsulterDepartement = () => {
   const updateEquipeLocal = (updated: Equipe) =>
     setEquipes((prev) => prev.map((e) => e.equipeId === updated.equipeId ? updated : e));
 
-  const handleCreerEquipe = async () => {
+  const handleCreerEquipe = () => {
     if (!nomEquipe.trim()) { setError("Le nom est obligatoire"); return; }
     setSaving(true); setError("");
     try {
-      const res = await axios.post(`${API_URL}/equipe/add`, { nom: nomEquipe.trim(), departId: Number(id) }, { headers });
-      // Ajouter directement dans l'état local
-      setEquipes((prev) => [...prev, { ...res.data.equipe, employes: [], manager: null }]);
+      const result = equipeService.create({ nom: nomEquipe.trim(), departId: Number(id) });
+      setEquipes((prev) => [...prev, { ...result.equipe, employes: [], manager: null }]);
       setModalAjoutEquipe(false); reset();
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Erreur lors de la création");
+      setError(e?.message ?? "Erreur lors de la création");
     } finally { setSaving(false); }
   };
 
-  const handleRenommerEquipe = async () => {
+  const handleRenommerEquipe = () => {
     if (!modalEditEquipe || !nomEquipe.trim()) { setError("Le nom est obligatoire"); return; }
     setSaving(true); setError("");
     try {
-      await axios.patch(`${API_URL}/equipe/${modalEditEquipe.equipeId}`, { nom: nomEquipe.trim() }, { headers });
+      equipeService.update(modalEditEquipe.equipeId, { nom: nomEquipe.trim() });
       updateEquipeLocal({ ...modalEditEquipe, nom: nomEquipe.trim() });
       setModalEditEquipe(null); reset();
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Erreur");
+      setError(e?.message ?? "Erreur");
     } finally { setSaving(false); }
   };
 
-  const handleAssignerMembre = async (equipe: Equipe, emp: EmployeeLight) => {
+  const handleAssignerMembre = (equipe: Equipe, emp: EmployeeLight) => {
     try {
-      await axios.patch(`${API_URL}/equipe/${equipe.equipeId}/assigner/${emp.userId}`, {}, { headers });
+      equipeService.assignerMembre(equipe.equipeId, emp.userId);
       updateEquipeLocal({ ...equipe, employes: [...equipe.employes, emp] });
       setModalAjoutMembre(null); reset();
     } catch (e: any) {
-      // L'erreur backend indique si l'employé est déjà dans une autre équipe
-      setError(e.response?.data?.message ?? "Erreur");
+      setError(e?.message ?? "Erreur");
     }
   };
 
-  const handleRetirerMembre = async (equipe: Equipe, userId: number) => {
-    // Bloquer côté frontend si l'employé est le manager actuel
+  const handleRetirerMembre = (equipe: Equipe, userId: number) => {
     if (equipe.manager?.userId === userId) {
       setError(`Cet employé est le manager de l'équipe "${equipe.nom}". Désassignez-le d'abord en tant que manager.`);
       return;
     }
     try {
-      await axios.delete(`${API_URL}/equipe/${equipe.equipeId}/retirer/${userId}`, { headers });
+      equipeService.retirerMembre(equipe.equipeId, userId);
       updateEquipeLocal({ ...equipe, employes: equipe.employes.filter((e) => e.userId !== userId) });
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Erreur");
+      setError(e?.message ?? "Erreur");
     }
   };
 
-  const handleAssignerManager = async (equipe: Equipe, managerId: number | null) => {
+  const handleAssignerManager = (equipe: Equipe, managerId: number | null) => {
     setErrorManager("");
     try {
-      await axios.patch(`${API_URL}/equipe/${equipe.equipeId}`, { managerId }, { headers });
+      equipeService.update(equipe.equipeId, { managerId });
       const manager = managerId ? allEmployes.find((e) => e.userId === managerId) ?? null : null;
-
       let employes = equipe.employes;
-
-      // Si on assigne un manager, l'ajouter automatiquement comme membre s'il ne l'est pas déjà
       if (manager && !employes.some((e) => e.userId === manager.userId)) {
-        try {
-          await axios.patch(`${API_URL}/equipe/${equipe.equipeId}/assigner/${manager.userId}`, {}, { headers });
-          employes = [...employes, manager];
-        } catch {
-          // L'ajout comme membre a échoué (déjà dans une autre équipe) — on continue quand même
-          // le manager est assigné mais pas ajouté comme membre
-        }
+        equipeService.assignerMembre(equipe.equipeId, manager.userId);
+        employes = [...employes, manager];
       }
-
       updateEquipeLocal({ ...equipe, manager, employes });
       setModalManager(null); reset();
     } catch (e: any) {
-      // Afficher l'erreur dans le modal manager, pas dans le bandeau global
-      setErrorManager(e.response?.data?.message ?? "Erreur lors de l'assignation");
+      setErrorManager(e?.message ?? "Erreur lors de l'assignation");
     }
   };
 
-  const handleSupprimerEquipe = async (equipeId: number) => {
+  const handleSupprimerEquipe = (equipeId: number) => {
     if (!confirm("Supprimer cette équipe ?")) return;
     try {
-      await axios.delete(`${API_URL}/equipe/${equipeId}`, { headers });
+      equipeService.delete(equipeId);
       setEquipes((prev) => prev.filter((e) => e.equipeId !== equipeId));
     } catch { /* silencieux */ }
   };

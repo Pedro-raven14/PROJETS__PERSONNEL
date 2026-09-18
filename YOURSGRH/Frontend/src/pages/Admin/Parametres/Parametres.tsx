@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Building2, Settings as SettingsIcon, Save, Plus } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { Input } from "../../../components/UI/Input";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { parametreService } from "../../../lib/mockService";
 
 type ParametreRH = {
   parametreId?: number;
@@ -33,33 +32,25 @@ const ONGLETS = [
 ];
 
 const Parametres = () => {
-  const token = localStorage.getItem("token");
   const [onglet, setOnglet] = useState<"entreprise" | "rh">("entreprise");
-
-  const [form, setForm] = useState<ParametreRH>(DEFAULT);
+  const [form, setForm]     = useState<ParametreRH>(DEFAULT);
   const [existe, setExiste] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]   = useState("");
   const [success, setSuccess] = useState("");
 
   useEffect(() => { fetchParametre(); }, []);
 
-  const fetchParametre = async () => {
+  const fetchParametre = () => {
     try {
-      const res = await axios.get(`${API_URL}/parametre-rh`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setForm({ ...DEFAULT, ...res.data });
+      const data = parametreService.get();
+      setForm({ ...DEFAULT, ...data });
       setExiste(true);
-    } catch {
-      setExiste(false);
-    }
+    } catch { setExiste(false); }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setError(""); setSuccess(""); setSaving(true);
-
-    // Validation
     if (onglet === "entreprise") {
       if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
         setError("L'adresse email n'est pas valide"); setSaving(false); return;
@@ -73,26 +64,18 @@ const Parametres = () => {
       if (form.solde_conges_initial < 0) { setError("Le solde initial doit être positif"); setSaving(false); return; }
       if (form.nb_jours_preavis_conge < 0) { setError("Le préavis doit être positif"); setSaving(false); return; }
     }
-
     try {
       if (existe) {
-        await axios.patch(`${API_URL}/parametre-rh`, form, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        parametreService.update(form);
       } else {
-        await axios.post(`${API_URL}/parametre-rh/setup`, form, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        parametreService.setup(form);
         setExiste(true);
       }
       setSuccess("Paramètres enregistrés.");
       fetchParametre();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la sauvegarde");
-    } finally {
-      setSaving(false);
-    }
+      setError(err?.message || "Erreur lors de la sauvegarde");
+    } finally { setSaving(false); }
   };
 
   const set = (key: keyof ParametreRH, value: any) =>

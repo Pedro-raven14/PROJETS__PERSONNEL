@@ -2,15 +2,18 @@ import { useEffect, useState } from "react";
 import {
   Mail, Phone, Calendar, Building2, Briefcase, Zap, Target,
 } from "lucide-react";
-import axios from "axios";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
 } from "recharts";
 
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/UI/Tabs";
-import { API_URL } from "../../../config/api";
 import { useIsMobile } from "../../../hooks/Use-mobile";
+import {
+  employeeService, congeService, evaluationService,
+  formationService, contratService, competenceService,
+  objectifService,
+} from "../../../lib/mockService";
 
 // --- Types ---
 
@@ -90,7 +93,6 @@ const NIVEAU_INFO: Record<number, { label: string; pct: number; color: string }>
 };
 
 const Profil = () => {
-  const token      = localStorage.getItem("token");
   const empLocal   = JSON.parse(localStorage.getItem("employee") || "{}");
   const userId     = empLocal?.userId;
 
@@ -106,30 +108,19 @@ const Profil = () => {
 
   useEffect(() => {
     if (!userId) return;
-    const headers = { Authorization: `Bearer ${token}` };
-
-    Promise.all([
-      axios.get(`${API_URL}/employee/${userId}`, { headers }),
-      axios.get(`${API_URL}/conge/mes-conges`, { headers }).catch(() => ({ data: [] })),
-      axios.get(`${API_URL}/evaluation/employee/${userId}`, { headers }).catch(() => ({ data: [] })),
-      axios.get(`${API_URL}/formation/employee/${userId}`, { headers }).catch(() => ({ data: [] })),
-      axios.get(`${API_URL}/contrat/mes-contrats`, { headers }).catch(() => ({ data: [] })),
-      axios.get(`${API_URL}/competences/employee/${userId}`, { headers }).catch(() => ({ data: [] })),
-    ]).then(([empRes, congesRes, evalsRes, formRes, contratRes, compRes]) => {
-      setEmployee(empRes.data);
-      setConges(congesRes.data);
-      setEvals(evalsRes.data);
-      setFormations(formRes.data);
-      setContrats(contratRes.data);
-      setCompetences(compRes.data);
-      // Charger les objectifs de l'équipe si l'employé en a une
-      const equipeId = empRes.data?.equipe?.equipeId;
-      if (equipeId) {
-        axios.get(`${API_URL}/objectif/equipe/${equipeId}`, { headers })
-          .then((r) => setObjectifs(r.data))
-          .catch(() => {});
-      }
-    }).finally(() => setLoading(false));
+    try {
+      setEmployee(employeeService.getById(userId));
+      setConges(congeService.getMesConges(userId));
+      setEvals(evaluationService.getByEmployee(userId));
+      setFormations(formationService.getByEmployee(userId));
+      setContrats(contratService.getMesContrats(userId));
+      setCompetences(competenceService.getByEmployee(userId));
+      const emp = employeeService.getById(userId);
+      const equipeId = emp?.equipe?.equipeId;
+      if (equipeId) setObjectifs(objectifService.getByEquipe(equipeId));
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   if (loading) {

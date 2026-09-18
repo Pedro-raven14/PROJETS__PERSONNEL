@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, Plus, Eye, Pencil, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
@@ -10,7 +9,7 @@ import { Input } from "../../../components/UI/Input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../../../components/UI/Select";
-import { API_URL } from "../../../config/api";
+import { employeeService } from "../../../lib/mockService";
 import AjoutEmployee from "./AjoutEmployee";
 import AjoutCompetences from "./AjoutCompetences";
 import CreateContrat from "./CreateContrat";
@@ -101,17 +100,13 @@ const Employes = () => {
   const [showContrats,    setShowContrats]    = useState<{ userId: number; prenom: string; nom: string } | null>(null);
   const [editEmployee,    setEditEmployee]    = useState<Employee | null>(null);
 
-  const fetchEmployees = async (p = 1) => {
+  const fetchEmployees = (p = 1) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/employee/getall`, {
-        params: { page: p, limit: LIMIT },
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setEmployees(res.data.data);
-      setTotal(res.data.total);
-      setTotalPages(res.data.totalPages);
+      const result = employeeService.getAll(p, LIMIT);
+      setEmployees(result.data);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
       setPage(p);
     } catch {
       // silencieux

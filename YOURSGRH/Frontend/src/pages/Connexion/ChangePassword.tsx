@@ -1,17 +1,16 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Eye, EyeOff, Lock } from "lucide-react";
-import { API_URL } from '../../config/api';
+import { authService } from "../../lib/mockService";
 
 const ChangePassword = () => {
     const navigate = useNavigate();
-    const [newPassword, setNewPassword] = useState("");
+    const [newPassword, setNewPassword]         = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword]       = useState(false);
+    const [error, setError]                     = useState("");
+    const [success, setSuccess]                 = useState("");
+    const [loading, setLoading]                 = useState(false);
 
     useEffect(() => {
         if (!localStorage.getItem("token")) navigate("/login");
@@ -26,53 +25,25 @@ const ChangePassword = () => {
             setError("Veuillez remplir tous les champs");
             return;
         }
-
         if (newPassword.length < 8) {
             setError("Le mot de passe doit contenir au moins 8 caractères");
             return;
         }
-
         if (newPassword !== confirmPassword) {
             setError("Les mots de passe ne correspondent pas");
             return;
         }
-
-        // Lire le token au moment de l'appel, pas au montage
-        const currentToken = localStorage.getItem("token");
-        if (!currentToken) {
-            navigate("/login");
-            return;
-        }
+        if (!localStorage.getItem("token")) { navigate("/login"); return; }
 
         setLoading(true);
         try {
-            const res = await axios.post(
-                `${API_URL}/auth/change-password`,
-                { newPassword },
-                {
-                    headers: {
-                        Authorization: `Bearer ${currentToken}`,
-                    },
-                }
-            );
-
-            // Mettre à jour token ET employee dans le localStorage
-            localStorage.setItem("token", res.data.access_token);
-            localStorage.setItem("employee", JSON.stringify(res.data.employee));
-
+            const result = authService.changePassword(newPassword);
+            localStorage.setItem("token",    result.access_token);
+            localStorage.setItem("employee", JSON.stringify(result.employee));
             setSuccess("Mot de passe mis à jour avec succès");
-
-            // Naviguer vers / après succès — le Container relira le localStorage à jour
-            setTimeout(() => {
-                navigate("/");
-            }, 1200);
+            setTimeout(() => navigate("/"), 1200);
         } catch (err: any) {
-            const msg = err.response?.data?.message;
-            if (msg) {
-                setError(typeof msg === 'string' ? msg : msg.join(', '));
-            } else {
-                setError("Erreur lors de la mise à jour du mot de passe");
-            }
+            setError(err?.message || "Erreur lors de la mise à jour du mot de passe");
         } finally {
             setLoading(false);
         }
@@ -82,7 +53,6 @@ const ChangePassword = () => {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
             <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
 
-                {/* Header */}
                 <div className="text-center mb-6">
                     <div className="mx-auto w-12 h-12 rounded-full bg-[#4361ee]/10 flex items-center justify-center mb-3">
                         <Lock className="text-[#4361ee]" />
@@ -95,22 +65,18 @@ const ChangePassword = () => {
                     </p>
                 </div>
 
-                {/* Alerts */}
                 {error && (
                     <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
                         {error}
                     </div>
                 )}
-
                 {success && (
                     <div className="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
                         {success}
                     </div>
                 )}
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* New password */}
                     <div>
                         <label className="block text-sm font-medium mb-1">
                             Nouveau mot de passe
@@ -132,8 +98,6 @@ const ChangePassword = () => {
                             </button>
                         </div>
                     </div>
-
-                    {/* Confirm password */}
                     <div>
                         <label className="block text-sm font-medium mb-1">
                             Confirmer le mot de passe
@@ -146,8 +110,6 @@ const ChangePassword = () => {
                             placeholder="Répétez le mot de passe"
                         />
                     </div>
-
-                    {/* Submit */}
                     <button
                         type="submit"
                         disabled={loading}
@@ -157,13 +119,12 @@ const ChangePassword = () => {
                     </button>
                 </form>
 
-                {/* Footer */}
                 <div className="mt-6 text-center text-xs text-gray-400">
                     © 2026 YOURSGHR — Sécurité & confidentialité
                 </div>
             </div>
         </div>
     );
-}
+};
 
-export default ChangePassword
+export default ChangePassword;

@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, Building2, BarChart3, Award, Briefcase, Eye, Plus, X, Pencil, Trash2 } from "lucide-react";
-import axios from "axios";
 
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { equipeService, objectifService } from "../../../lib/mockService";
 
 type Objectif = {
   objectifId: number;
@@ -75,7 +74,6 @@ const StatBox = ({ icon: Icon, label, value, color }: { icon: React.ElementType;
 
 const MonEquipe = () => {
   const token    = localStorage.getItem("token");
-  const headers  = { Authorization: `Bearer ${token}` };
   const navigate = useNavigate();
 
   // Récupérer le rôle et userId de l'utilisateur connecté
@@ -102,17 +100,14 @@ const MonEquipe = () => {
   const [editObj,    setEditObj]    = useState<Objectif | null>(null);
   const [newStatus,  setNewStatus]  = useState("");
 
-  const fetchEquipe = async () => {
+  const fetchEquipe = () => {
     try {
-      const res = await axios.get(`${API_URL}/equipe/mon-equipe`, { headers });
-      setEquipe(res.data);
-      if (res.data?.equipeId) {
-        const objRes = await axios.get(`${API_URL}/objectif/equipe/${res.data.equipeId}`, { headers });
-        setObjectifs(objRes.data);
+      const eq = equipeService.getMonEquipe(currentUserId);
+      setEquipe(eq);
+      if (eq?.equipeId) {
+        setObjectifs(objectifService.getByEquipe(eq.equipeId) as Objectif[]);
       }
-    } catch {
-      // silencieux
-    } finally {
+    } catch { /* silencieux */ } finally {
       setLoading(false);
     }
   };
@@ -124,51 +119,31 @@ const MonEquipe = () => {
     ? (equipe.manager?.userId === currentUserId || currentRole === 'RH' || currentRole === 'ADMIN')
     : false;
 
-  const handleAjouterObjectif = async () => {
-    if (!titre.trim() || !dateDebut || !dateFin) {
-      setError("Titre, date de début et date de fin sont obligatoires");
-      return;
-    }
-    if (dateFin < dateDebut) {
-      setError("La date de fin doit être postérieure à la date de début");
-      return;
-    }
+  const handleAjouterObjectif = () => {
+    if (!titre.trim() || !dateDebut || !dateFin) { setError("Titre, date de début et date de fin sont obligatoires"); return; }
+    if (dateFin < dateDebut) { setError("La date de fin doit être postérieure à la date de début"); return; }
     setSaving(true); setError("");
     try {
-      await axios.post(`${API_URL}/objectif/add`, {
-        titre: titre.trim(),
-        date_debut: dateDebut,
-        date_fin: dateFin,
-        equipeId: equipe!.equipeId,
-        points: points ? Number(points) : undefined,
-      }, { headers });
+      objectifService.add({ titre: titre.trim(), date_debut: dateDebut, date_fin: dateFin, equipeId: equipe!.equipeId, points: points ? Number(points) : undefined });
       setShowModal(false);
       setTitre(""); setDateDebut(""); setDateFin(""); setPoints("");
-      // Recharger les objectifs
-      const objRes = await axios.get(`${API_URL}/objectif/equipe/${equipe!.equipeId}`, { headers });
-      setObjectifs(objRes.data);
+      setObjectifs(objectifService.getByEquipe(equipe!.equipeId) as Objectif[]);
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Erreur lors de la création");
-    } finally {
-      setSaving(false);
-    }
+      setError(e?.message ?? "Erreur lors de la création");
+    } finally { setSaving(false); }
   };
 
-  const handleUpdateStatut = async () => {
+  const handleUpdateStatut = () => {
     if (!editObj || !newStatus) return;
-    try {
-      await axios.patch(`${API_URL}/objectif/${editObj.objectifId}`, { status: newStatus }, { headers });
-      setObjectifs((prev) => prev.map((o) => o.objectifId === editObj.objectifId ? { ...o, status: newStatus } : o));
-      setEditObj(null);
-    } catch { /* silencieux */ }
+    objectifService.update(editObj.objectifId, { status: newStatus });
+    setObjectifs((prev) => prev.map((o) => o.objectifId === editObj.objectifId ? { ...o, status: newStatus } : o));
+    setEditObj(null);
   };
 
-  const handleDeleteObjectif = async (objectifId: number) => {
+  const handleDeleteObjectif = (objectifId: number) => {
     if (!confirm("Supprimer cet objectif ?")) return;
-    try {
-      await axios.delete(`${API_URL}/objectif/${objectifId}`, { headers });
-      setObjectifs((prev) => prev.filter((o) => o.objectifId !== objectifId));
-    } catch { /* silencieux */ }
+    objectifService.delete(objectifId);
+    setObjectifs((prev) => prev.filter((o) => o.objectifId !== objectifId));
   };
 
   if (loading) {

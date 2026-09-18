@@ -3,7 +3,6 @@ import {
   Users, UserCheck, CalendarDays, TrendingDown,
   Brain, Loader2, AlertTriangle,
 } from "lucide-react";
-import axios from "axios";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar,
@@ -11,7 +10,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
-import { API_URL } from "../../../config/api";
+import { rapportService, predictionService } from "../../../lib/mockService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,52 +104,41 @@ function StatCard({ icon: Icon, label, value, change, changeType = "neutral", ic
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
-  const [stats, setStats]           = useState<Stats | null>(null);
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [loadingStats, setLoadingStats]   = useState(true);
-  const [loadingPred, setLoadingPred]     = useState(true);
+  const [stats, setStats]               = useState<Stats | null>(null);
+  const [predictions, setPredictions]   = useState<Prediction[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingPred, setLoadingPred]   = useState(true);
 
-  // Charger les stats depuis /rapport/stats
   useEffect(() => {
-    axios.get(`${API_URL}/rapport/stats`, { headers })
-      .then(res => setStats(res.data))
-      .catch(() => setStats(null))
-      .finally(() => setLoadingStats(false));
+    try {
+      setStats(rapportService.getStats());
+    } catch {
+      setStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
   }, []);
 
-  // Charger les dernières prédictions risque de départ
   useEffect(() => {
-    axios.get(`${API_URL}/prediction/getall?page=1&limit=50`, { headers })
-      .then(res => {
-        const data = res.data?.data ?? res.data ?? [];
-        // Garder uniquement les RISQUE_DEPART, triées par date décroissante
-        const departPreds = data
-          .filter((p: any) => p.type === "RISQUE_DEPART" && p.message)
-          .sort((a: any, b: any) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
-
-        // Prendre la DERNIÈRE analyse et afficher tous ses employés
-        if (departPreds.length === 0) {
-          setPredictions([]);
-          return;
-        }
-        try {
-          const parsed = JSON.parse(departPreds[0].message);
-          const resultats: Prediction[] = parsed.resultats ?? [];
-          // Trier par probabilité décroissante et afficher les 3 premiers
-          setPredictions(
-            resultats
-              .sort((a, b) => (b.probabilite_depart ?? 0) - (a.probabilite_depart ?? 0))
-              .slice(0, 3)
-          );
-        } catch {
-          setPredictions([]);
-        }
-      })
-      .catch(() => setPredictions([]))
-      .finally(() => setLoadingPred(false));
+    try {
+      const { data: allPreds } = predictionService.getAll();
+      const departPreds = allPreds
+        .filter((p: any) => p.type === "RISQUE_DEPART" && p.message)
+        .sort((a: any, b: any) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
+      if (departPreds.length === 0) { setPredictions([]); return; }
+      const parsed = JSON.parse(departPreds[0].message);
+      const resultats: Prediction[] = parsed.resultats ?? [];
+      setPredictions(
+        resultats
+          .sort((a, b) => (b.probabilite_depart ?? 0) - (a.probabilite_depart ?? 0))
+          .slice(0, 3)
+      );
+    } catch {
+      setPredictions([]);
+    } finally {
+      setLoadingPred(false);
+    }
   }, []);
 
   // Construire les données de graphique à partir des stats

@@ -4,15 +4,18 @@ import {
   ArrowLeft, Mail, Phone, Calendar, Building2,
   Briefcase, Zap, Target, Shield, X, Plus, Check, UserX,
 } from "lucide-react";
-import axios from "axios";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
 } from "recharts";
 
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/UI/Tabs";
-import { API_URL } from "../../../config/api";
 import { useIsMobile } from "../../../hooks/Use-mobile";
+import {
+  employeeService, congeService, evaluationService,
+  formationService, contratService, competenceService,
+  objectifService,
+} from "../../../lib/mockService";
 
 // --- Types alignés sur le backend ---
 
@@ -135,47 +138,41 @@ type PermissionsPanelProps = {
 };
 
 const PermissionsPanel = ({ employeeId, permissions, onUpdate }: PermissionsPanelProps) => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
+  const [allPerms, setAllPerms] = useState<PermissionItem[]>([]);
+  const [showAdd,  setShowAdd]  = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [adding,   setAdding]   = useState<string | null>(null);
+  const [erreur,   setErreur]   = useState<string | null>(null);
 
-  const [allPerms,    setAllPerms]    = useState<PermissionItem[]>([]);
-  const [showAdd,     setShowAdd]     = useState(false);
-  const [removing,    setRemoving]    = useState<string | null>(null);
-  const [adding,      setAdding]      = useState<string | null>(null);
-  const [erreur,      setErreur]      = useState<string | null>(null);
-
-  // Charger toutes les permissions disponibles
   useEffect(() => {
-    axios.get(`${API_URL}/permission/getall`, { headers })
-      .then((res) => setAllPerms(res.data?.data ?? res.data ?? []))
-      .catch(() => {});
+    setAllPerms(employeeService.getAllPermissions().data);
   }, []);
 
   const currentNoms = new Set(permissions.map((p) => p.nom));
   const disponibles = allPerms.filter((p) => !currentNoms.has(p.nom));
 
-  const handleRetirer = async (nom: string) => {
+  const handleRetirer = (nom: string) => {
     setRemoving(nom);
     setErreur(null);
     try {
-      await axios.patch(`${API_URL}/employee/${employeeId}/permissions/retirer`, { permissions: [nom] }, { headers });
+      employeeService.removePermission(employeeId, nom);
       onUpdate(permissions.filter((p) => p.nom !== nom));
     } catch (e: any) {
-      setErreur(e.response?.data?.message ?? "Erreur lors de la suppression");
+      setErreur(e?.message ?? "Erreur lors de la suppression");
     } finally {
       setRemoving(null);
     }
   };
 
-  const handleAjouter = async (nom: string) => {
+  const handleAjouter = (nom: string) => {
     setAdding(nom);
     setErreur(null);
     try {
-      await axios.patch(`${API_URL}/employee/${employeeId}/permissions/ajouter`, { permissions: [nom] }, { headers });
+      employeeService.addPermission(employeeId, nom);
       onUpdate([...permissions, { nom }]);
       setShowAdd(false);
     } catch (e: any) {
-      setErreur(e.response?.data?.message ?? "Erreur lors de l'ajout");
+      setErreur(e?.message ?? "Erreur lors de l'ajout");
     } finally {
       setAdding(null);
     }
@@ -329,7 +326,6 @@ const PermissionsPanel = ({ employeeId, permissions, onUpdate }: PermissionsPane
 const EmployeeProfile = () => {
   const { id }   = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const token    = localStorage.getItem("token");
 
   // Détecter le rôle pour adapter les navigations
   const basePath = (() => {
@@ -352,30 +348,20 @@ const EmployeeProfile = () => {
 
   useEffect(() => {
     if (!id) return;
-    const headers = { Authorization: `Bearer ${token}` };
-
-    Promise.all([
-      axios.get(`${API_URL}/employee/${id}`, { headers }),
-      axios.get(`${API_URL}/conge/employee/${id}`, { headers }).catch(() => ({ data: [] })),
-      axios.get(`${API_URL}/evaluation/employee/${id}`, { headers }).catch(() => ({ data: [] })),
-      axios.get(`${API_URL}/formation/employee/${id}`, { headers }).catch(() => ({ data: [] })),
-      axios.get(`${API_URL}/contrat/employee/${id}`, { headers }).catch(() => ({ data: [] })),
-      axios.get(`${API_URL}/competences/employee/${id}`, { headers }).catch(() => ({ data: [] })),
-    ]).then(([empRes, congesRes, evalsRes, formRes, contratRes, compRes]) => {
-      setEmployee(empRes.data);
-      setConges(congesRes.data);
-      setEvals(evalsRes.data);
-      setFormations(formRes.data);
-      setContrats(contratRes.data);
-      setCompetences(compRes.data);
-      // Charger les objectifs de l'équipe si l'employé en a une
-      const equipeId = empRes.data?.equipe?.equipeId;
-      if (equipeId) {
-        axios.get(`${API_URL}/objectif/equipe/${equipeId}`, { headers })
-          .then((r) => setObjectifs(r.data))
-          .catch(() => {});
-      }
-    }).finally(() => setLoading(false));
+    try {
+      const userId = Number(id);
+      const emp    = employeeService.getById(userId);
+      setEmployee(emp);
+      setConges(congeService.getByEmployee(userId));
+      setEvals(evaluationService.getByEmployee(userId));
+      setFormations(formationService.getByEmployee(userId));
+      setContrats(contratService.getByEmployee(userId));
+      setCompetences(competenceService.getByEmployee(userId));
+      const equipeId = emp?.equipe?.equipeId;
+      if (equipeId) setObjectifs(objectifService.getByEquipe(equipeId));
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   }, [id]);
 
   if (loading) {
@@ -394,19 +380,15 @@ const EmployeeProfile = () => {
   // Ne jamais proposer le licenciement pour Admin et RH
   const roleProtege   = ['ADMIN', 'RH'].includes(employee.role?.nom?.toUpperCase() ?? '');
 
-  const handleLicencier = async () => {
+  const handleLicencier = () => {
     setLicenciementLoading(true);
     setLicenciementError("");
     try {
-      const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
-      await axios.patch(`${API_URL}/contrat/licencier/${employee.userId}`, {}, { headers });
-      // Recharger les contrats pour refléter le statut RESILIE
-      const res = await axios.get(`${API_URL}/contrat/employee/${employee.userId}`, { headers });
-      setContrats(res.data);
+      contratService.licencier(employee.userId);
+      setContrats(contratService.getByEmployee(employee.userId));
       setShowLicencier(false);
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setLicenciementError(typeof msg === "string" ? msg : "Erreur lors du licenciement");
+      setLicenciementError(e?.message || "Erreur lors du licenciement");
     } finally {
       setLicenciementLoading(false);
     }

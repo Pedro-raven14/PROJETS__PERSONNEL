@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Wallet, Plus, Search, ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { Input } from "../../../components/UI/Input";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { fichePaieService } from "../../../lib/mockService";
 import { useIsMobile } from "../../../hooks/Use-mobile";
 import GenererFichePaie from "./GenererFichePaie";
 import DetailFichePaie from "./DetailFichePaie";
@@ -36,22 +35,18 @@ const Paie = () => {
   const [ficheDetail, setFicheDetail] = useState<FichePaie | null>(null);
   const LIMIT = 10;
   const isMobile = useIsMobile();
-  const token = localStorage.getItem("token");
 
-  const fetchFiches = async (p = 1) => {
+  const fetchFiches = (p = 1) => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/fiche-paie/getall`, {
-        params: { page: p, limit: LIMIT },
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFiches(res.data.data ?? res.data);
-      setTotal(res.data.total ?? 0);
-      setTotalPages(res.data.totalPages ?? 1);
+      const result = fichePaieService.getAll(p, LIMIT);
+      setFiches(result.data);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
       setPage(p);
-    } catch {
-      // silencieux
-    } finally { setLoading(false); }
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchFiches(1); }, []);

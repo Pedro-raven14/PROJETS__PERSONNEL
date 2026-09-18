@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   Brain, TrendingUp, TrendingDown, GraduationCap,
   AlertTriangle, CheckCircle,
@@ -9,7 +8,7 @@ import {
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { employeeService, predictionService } from "../../../lib/mockService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -444,7 +443,6 @@ function CarteFormation({ r }: { r: ResultatFormation }) {
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 const AnalysesIA = () => {
-  const token = localStorage.getItem("token");
   const [employes, setEmployes]       = useState<Employe[]>([]);
   const [typePred, setTypePred]       = useState<TypePrediction>("RISQUE_DEPART");
   const [loading, setLoading]         = useState(false);
@@ -454,31 +452,22 @@ const AnalysesIA = () => {
   const [focusData, setFocusData]     = useState<PredictionResultat | null>(null);
 
   useEffect(() => {
-    axios.get(`${API_URL}/employee/getall`, {
-      params: { page: 1, limit: 200 },
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => setEmployes(res.data.data ?? res.data))
-      .catch(() => setEmployes([]))
-      .finally(() => setLoadingEmp(false));
+    try {
+      const result = employeeService.getAll(1, 200);
+      setEmployes(result.data);
+    } catch { setEmployes([]); } finally {
+      setLoadingEmp(false);
+    }
   }, []);
 
-  const lancer = async () => {
-    setLoading(true);
-    setErreur(null);
-    setResultat(null);
+  const lancer = () => {
+    setLoading(true); setErreur(null); setResultat(null);
     try {
-      const res = await axios.post(
-        `${API_URL}/prediction/lancer`,
-        { type: typePred },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      setResultat(res.data);
+      const res = predictionService.lancer(typePred);
+      setResultat(res);
     } catch (err: any) {
-      setErreur(err.response?.data?.message ?? "Erreur lors de l'analyse IA.");
-    } finally {
-      setLoading(false);
-    }
+      setErreur(err?.message ?? "Erreur lors de l'analyse IA.");
+    } finally { setLoading(false); }
   };
 
   const typeInfo    = TYPES.find(t => t.value === typePred)!;

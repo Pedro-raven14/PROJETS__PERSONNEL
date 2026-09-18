@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { Check, X, CalendarDays } from "lucide-react";
-import axios from "axios";
-
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/UI/Tabs";
-import { API_URL } from "../../../config/api";
+import { congeService } from "../../../lib/mockService";
 import { useCongesPending } from "../../../hooks/Use-conges-attente";
 import { useIsMobile } from "../../../hooks/Use-mobile";
 
@@ -36,21 +34,17 @@ const StatBox = ({ label, value, color }: { label: string; value: number; color:
 );
 
 const CongesManager = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
   const { decrement } = useCongesPending();
   const isMobile = useIsMobile();
+  const emp = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
 
   const [conges,  setConges]  = useState<Conge[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting,  setActing]  = useState<number | null>(null);
 
-  const fetchConges = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/conge/mon-equipe`, { headers });
-      setConges(res.data);
-    } catch { /* silencieux */ }
-    finally { setLoading(false); }
+  const fetchConges = () => {
+    try { setConges(congeService.getMonEquipe(emp?.userId ?? 0) as Conge[]); }
+    catch { /* silencieux */ } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchConges(); }, []);
@@ -59,14 +53,15 @@ const CongesManager = () => {
   const approuves = conges.filter((c) => c.statut === 'APPROUVE');
   const refuses   = conges.filter((c) => c.statut === 'REFUSE');
 
-  const handleAction = async (congeId: number, statut: 'APPROUVE' | 'REFUSE') => {
+  const handleAction = (congeId: number, statut: 'APPROUVE' | 'REFUSE') => {
     setActing(congeId);
     try {
-      await axios.patch(`${API_URL}/conge/${congeId}/valider`, { statut }, { headers });
+      congeService.valider(congeId, statut, emp?.userId ?? 0);
       setConges((prev) => prev.map((c) => c.congeId === congeId ? { ...c, statut } : c));
       decrement(1);
-    } catch { fetchConges(); }
-    finally { setActing(null); }
+    } catch { fetchConges(); } finally {
+      setActing(null);
+    }
   };
 
   const ListeConges = ({ items, showActions = false }: { items: Conge[]; showActions?: boolean }) => {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   BarChart3, FileText, Users, CalendarDays, GraduationCap,
   Award, Plus, Eye, Trash2, Loader2, AlertTriangle, Download,
@@ -9,7 +8,7 @@ import {
 } from "recharts";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { rapportService } from "../../../lib/mockService";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -135,7 +134,6 @@ function exportCSV(stats: Stats, onglet: string) {
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 const Rapports = () => {
-  const token = localStorage.getItem("token");
   const [onglet, setOnglet]         = useState<"effectifs" | "conges" | "formations" | "evaluations">("effectifs");
   const [stats, setStats]           = useState<Stats | null>(null);
   const [rapports, setRapports]     = useState<RapportItem[]>([]);
@@ -143,47 +141,32 @@ const Rapports = () => {
   const [generating, setGenerating] = useState<TypeRapport | null>(null);
   const [erreur, setErreur]         = useState<string | null>(null);
 
-  const headers = { Authorization: `Bearer ${token}` };
-
-  const fetchStats = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/rapport/stats`, { headers });
-      setStats(res.data);
-    } catch { /* silencieux */ }
-    finally { setLoadingStats(false); }
+  const fetchStats = () => {
+    try { setStats(rapportService.getStats() as Stats); }
+    catch { /* silencieux */ } finally { setLoadingStats(false); }
   };
 
-  const fetchRapports = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/rapport/getall`, { headers });
-      setRapports(res.data);
-    } catch { /* silencieux */ }
+  const fetchRapports = () => {
+    try { setRapports(rapportService.getAll() as RapportItem[]); }
+    catch { /* silencieux */ }
   };
 
-  useEffect(() => {
-    fetchStats();
-    fetchRapports();
-  }, []);
+  useEffect(() => { fetchStats(); fetchRapports(); }, []);
 
-  const generer = async (type: TypeRapport) => {
-    setGenerating(type);
-    setErreur(null);
+  const generer = (type: TypeRapport) => {
+    setGenerating(type); setErreur(null);
     try {
-      await axios.post(`${API_URL}/rapport/generer`, { type }, { headers });
-      await fetchRapports();
+      rapportService.generer(type);
+      fetchRapports();
     } catch (e: any) {
-      setErreur(e.response?.data?.message ?? "Erreur lors de la génération du rapport.");
-    } finally {
-      setGenerating(null);
-    }
+      setErreur(e?.message ?? "Erreur lors de la génération du rapport.");
+    } finally { setGenerating(null); }
   };
 
-  const supprimer = async (id: number) => {
+  const supprimer = (id: number) => {
     if (!confirm("Supprimer ce rapport ?")) return;
-    try {
-      await axios.delete(`${API_URL}/rapport/${id}`, { headers });
-      setRapports(prev => prev.filter(r => r.rapportId !== id));
-    } catch { /* silencieux */ }
+    rapportService.delete(id);
+    setRapports(prev => prev.filter(r => r.rapportId !== id));
   };
 
   const CHART_COLORS = ["var(--color-primary)", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4"];
@@ -441,18 +424,9 @@ const Rapports = () => {
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: "0.375rem", flexShrink: 0 }}>
-                  <a
-                    href={`${API_URL}/rapport/${r.rapportId}/document?token=${localStorage.getItem("token")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    title="Voir le PDF"
-                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "2rem", height: "2rem", borderRadius: "0.375rem", backgroundColor: "var(--color-primary)18", color: "var(--color-primary)", textDecoration: "none" }}
-                  >
-                    <Eye size={14} />
-                  </a>
                   <button
-                    onClick={() => supprimer(r.rapportId)}
                     title="Supprimer"
+                    onClick={() => supprimer(r.rapportId)}
                     style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "2rem", height: "2rem", borderRadius: "0.375rem", backgroundColor: "var(--color-destructive)18", color: "var(--color-destructive)", border: "none", cursor: "pointer" }}
                   >
                     <Trash2 size={14} />

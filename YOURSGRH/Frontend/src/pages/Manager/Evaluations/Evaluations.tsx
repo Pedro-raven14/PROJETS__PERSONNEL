@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Award, CalendarDays, Star } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../../../components/element/PageHeader";
-import { API_URL } from "../../../config/api";
+import { cycleEvaluationService, equipeService, evaluationService } from "../../../lib/mockService";
 import EvaluerMembre from "./EvaluerMembre";
 
 type Cycle = {
@@ -38,30 +37,25 @@ const getStatut = (debut: string, fin: string) => {
 };
 
 const ManagerEvaluations = () => {
-  const [cycles, setCycles]         = useState<Cycle[]>([]);
-  const [membres, setMembres]       = useState<Membre[]>([]);
+  const [cycles, setCycles]           = useState<Cycle[]>([]);
+  const [membres, setMembres]         = useState<Membre[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [cycleSelectionne, setCycleSelectionne] = useState<Cycle | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [cycleSelectionne, setCycleSelectionne]   = useState<Cycle | null>(null);
   const [membreSelectionne, setMembreSelectionne] = useState<Membre | null>(null);
 
-  const token = localStorage.getItem("token");
-  const me    = (() => { try { return JSON.parse(localStorage.getItem("employee") || "{}"); } catch { return {}; } })();
+  const me = (() => { try { return JSON.parse(localStorage.getItem("employee") || "{}"); } catch { return {}; } })();
 
-  const fetchData = async () => {
+  const fetchData = () => {
     setLoading(true);
     try {
-      const [cyclesRes, equipeRes, evalsRes] = await Promise.all([
-        axios.get(`${API_URL}/cycle-evaluation/getall`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/equipe/mon-equipe`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: null })),
-        axios.get(`${API_URL}/evaluation/evaluateur/${me.userId}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-      ]);
-      setCycles(cyclesRes.data);
-      setMembres(equipeRes.data?.employes ?? []);
-      setEvaluations(evalsRes.data);
-    } catch {
-      // silencieux
-    } finally { setLoading(false); }
+      setCycles(cycleEvaluationService.getAll() as Cycle[]);
+      const eq = equipeService.getMonEquipe(me.userId);
+      setMembres((eq?.employes ?? []) as Membre[]);
+      setEvaluations(evaluationService.getByEvaluateur(me.userId) as Evaluation[]);
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);

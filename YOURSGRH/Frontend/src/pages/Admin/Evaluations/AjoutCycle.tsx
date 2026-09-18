@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
-import axios from "axios";
 import { Button } from "../../../components/UI/Button";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { cycleEvaluationService } from "../../../lib/mockService";
 
 type Props = { onClose: () => void; onSuccess: () => void };
 
@@ -34,16 +33,10 @@ const AjoutCycle = ({ onClose, onSuccess }: Props) => {
 
     setSaving(true); setError("");
     try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${API_URL}/cycle-evaluation/add`,
-        { nom: nom.trim(), date_debut: dateDebut, date_fin: dateFin, criteres },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      cycleEvaluationService.add({ nom: nom.trim(), date_debut: dateDebut, date_fin: dateFin, criteres });
       onSuccess(); onClose();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la création");
+      setError(err?.message || "Erreur lors de la création");
     } finally { setSaving(false); }
   };
 

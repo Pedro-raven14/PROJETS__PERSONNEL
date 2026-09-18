@@ -3,7 +3,6 @@ import {
   Users, CalendarDays, Brain,
   GraduationCap, Loader2, AlertTriangle, Award,
 } from "lucide-react";
-import axios from "axios";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
@@ -11,7 +10,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
-import { API_URL } from "../../../config/api";
+import { rapportService, congeService, predictionService } from "../../../lib/mockService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,28 +70,20 @@ function StatCard({ icon: Icon, label, value, sub, color = "var(--color-primary)
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
-  const [stats, setStats]         = useState<Stats | null>(null);
-  const [conges, setConges]       = useState<Conge[]>([]);
-  const [predictions, setPred]    = useState<Prediction[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [stats, setStats]       = useState<Stats | null>(null);
+  const [conges, setConges]     = useState<Conge[]>([]);
+  const [predictions, setPred]  = useState<Prediction[]>([]);
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      axios.get(`${API_URL}/rapport/stats`, { headers }),
-      axios.get(`${API_URL}/conge/getall`, { params: { page: 1, limit: 100 }, headers }),
-      axios.get(`${API_URL}/prediction/getall`, { headers }),
-    ]).then(([sRes, cRes, pRes]) => {
-      const statsData = sRes.data;
-      // Congés — charger tous pour avoir le bon compte
-      const all: Conge[] = cRes.data?.data ?? cRes.data ?? [];
-      const enAttente = all.filter((c: Conge) => c.statut === "EN_ATTENTE");
-      const approuves = all.filter((c: Conge) => c.statut === "APPROUVE");
-      const refuses   = all.filter((c: Conge) => c.statut === "REFUSE");
+    try {
+      const statsData = rapportService.getStats();
+      const all: Conge[] = congeService.getAll(100) as Conge[];
+      const enAttente = all.filter((c) => c.statut === "EN_ATTENTE");
+      const approuves = all.filter((c) => c.statut === "APPROUVE");
+      const refuses   = all.filter((c) => c.statut === "REFUSE");
 
-      // Écraser les compteurs de /rapport/stats avec les valeurs réelles depuis /conge/getall
       if (statsData?.conges) {
         statsData.conges.totalEnAttente = enAttente.length;
         statsData.conges.totalApprouves = approuves.length;
@@ -100,19 +91,19 @@ const Dashboard = () => {
       }
       setStats(statsData);
       setConges(enAttente.slice(0, 5));
-      // Prédictions risque départ — prendre la DERNIÈRE analyse uniquement
-      const allPreds = (pRes.data?.data ?? pRes.data ?? []);
+
+      const { data: allPreds } = predictionService.getAll();
       const departPreds = allPreds
         .filter((p: any) => p.type === "RISQUE_DEPART" && p.message)
         .sort((a: any, b: any) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime());
       if (departPreds.length > 0) {
-        try {
-          const parsed = JSON.parse(departPreds[0].message);
-          const resultats: Prediction[] = parsed.resultats ?? [];
-          setPred(resultats.sort((a, b) => (b.probabilite_depart ?? 0) - (a.probabilite_depart ?? 0)).slice(0, 3));
-        } catch { /* ignore */ }
+        const parsed = JSON.parse(departPreds[0].message);
+        const resultats: Prediction[] = parsed.resultats ?? [];
+        setPred(resultats.sort((a, b) => (b.probabilite_depart ?? 0) - (a.probabilite_depart ?? 0)).slice(0, 3));
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   }, []);
 
   const congesData = stats ? [

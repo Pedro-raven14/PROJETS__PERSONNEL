@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { API_URL } from "../../config/api";
+import { authService } from "../../lib/mockService";
+import { DEMO_ACCOUNTS } from "../../lib/mockData";
 
 const MAX_TENTATIVES = 3;
 const BLOCAGE_SECONDES = 10;
@@ -11,25 +11,24 @@ type LoginProps = {
 };
 
 export const Login = ({ setAuth }: LoginProps) => {
-  const [email, setEmail]             = useState("");
-  const [password, setPassword]       = useState("");
-  const [error, setError]             = useState("");
-  const [isLoading, setIsLoading]     = useState(false);
-  const [tentatives, setTentatives]   = useState(0);
-  const [blocage, setBlocage]         = useState(0); // secondes restantes
+  const [email, setEmail]           = useState("");
+  const [password, setPassword]     = useState("");
+  const [error, setError]           = useState("");
+  const [isLoading, setIsLoading]   = useState(false);
+  const [tentatives, setTentatives] = useState(0);
+  const [blocage, setBlocage]       = useState(0);
   const navigate  = useNavigate();
   const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const estBloque = blocage > 0;
 
-  // Décompte du blocage
   useEffect(() => {
     if (blocage <= 0) return;
     timerRef.current = setInterval(() => {
       setBlocage((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
-          setTentatives(0); // réinitialise le compteur après déblocage
+          setTentatives(0);
           return 0;
         }
         return prev - 1;
@@ -51,20 +50,16 @@ export const Login = ({ setAuth }: LoginProps) => {
 
     setIsLoading(true);
     try {
-      const res   = await axios.post(`${API_URL}/auth/login`, { email, password });
-      const token = res.data.access_token;
-      const user  = res.data.employee;
-
-      // Succès — réinitialiser le compteur
+      const result = authService.login(email, password);
       setTentatives(0);
-      setAuth(token, user);
+      setAuth(result.access_token, result.employee);
 
-      if (user.mustChangePassword) { navigate("/change-password"); return; }
+      if (result.employee.mustChangePassword) { navigate("/change-password"); return; }
 
-      if (user.role === "ADMIN")        navigate("/admin");
-      else if (user.role === "RH")      navigate("/rh");
-      else if (user.role === "MANAGER") navigate("/manager");
-      else                              navigate("/employee");
+      if (result.employee.role?.nom === "ADMIN")        navigate("/admin");
+      else if (result.employee.role?.nom === "RH")      navigate("/rh");
+      else if (result.employee.role?.nom === "MANAGER") navigate("/manager");
+      else                                              navigate("/employee");
 
     } catch {
       const nouvellesTentatives = tentatives + 1;
@@ -109,17 +104,10 @@ export const Login = ({ setAuth }: LoginProps) => {
             {/* Compteur de blocage */}
             {estBloque && (
               <div style={{
-                marginBottom: "1rem",
-                padding: "0.75rem",
-                borderRadius: "0.5rem",
-                backgroundColor: "#fff3e0",
-                border: "1px solid #ffb74d",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.75rem",
+                marginBottom: "1rem", padding: "0.75rem", borderRadius: "0.5rem",
+                backgroundColor: "#fff3e0", border: "1px solid #ffb74d",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem",
               }}>
-                {/* Cercle animé */}
                 <div style={{
                   width: "3rem", height: "3rem", borderRadius: "9999px",
                   border: "3px solid #e85d04", display: "flex",
@@ -167,7 +155,6 @@ export const Login = ({ setAuth }: LoginProps) => {
                 />
               </div>
 
-              {/* Indicateur de tentatives restantes */}
               {tentatives > 0 && !estBloque && (
                 <div style={{ display: "flex", gap: "0.25rem", justifyContent: "center" }}>
                   {Array.from({ length: MAX_TENTATIVES }).map((_, i) => (
@@ -191,18 +178,50 @@ export const Login = ({ setAuth }: LoginProps) => {
               >
                 {isLoading ? "Connexion..." : estBloque ? `Patientez ${blocage}s…` : "Se connecter"}
               </button>
-
-              <div className="mt-4 text-center footer-info text-sm text-[#6c757d]">
-                <p>© 2025 YOURSGRH. Tous droits réservés.</p>
-                <div className="footer-links flex items-center justify-center gap-2 mt-2">
-                  <a className="hover:underline">Confidentialité</a>
-                  <span>•</span>
-                  <a className="hover:underline">Conditions d'utilisation</a>
-                  <span>•</span>
-                  <a className="hover:underline">Aide</a>
-                </div>
-              </div>
             </form>
+
+            {/* Comptes de démo */}
+            <div style={{
+              marginTop: "1.25rem", padding: "0.875rem",
+              background: "#f8f9ff", border: "1px solid #e0e7ff",
+              borderRadius: "0.625rem",
+            }}>
+              <p style={{ margin: "0 0 0.5rem", fontSize: "0.75rem", fontWeight: 600, color: "#4361ee", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                🎭 Comptes de démonstration
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                {DEMO_ACCOUNTS.map((acc) => (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => { setEmail(acc.email); setPassword(acc.password); setError(""); }}
+                    style={{
+                      textAlign: "left", background: "transparent", border: "none",
+                      cursor: "pointer", padding: "0.25rem 0.375rem", borderRadius: "0.375rem",
+                      fontSize: "0.8125rem", color: "#374151",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#e0e7ff")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <span style={{ fontWeight: 600, color: "#4361ee", marginRight: "0.375rem" }}>{acc.role}</span>
+                    {acc.email}
+                    <span style={{ color: "#9ca3af", marginLeft: "0.25rem" }}>/ {acc.password}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 text-center footer-info text-sm text-[#6c757d]">
+              <p>© 2025 YOURSGRH. Tous droits réservés.</p>
+              <div className="footer-links flex items-center justify-center gap-2 mt-2">
+                <a className="hover:underline">Confidentialité</a>
+                <span>•</span>
+                <a className="hover:underline">Conditions d'utilisation</a>
+                <span>•</span>
+                <a className="hover:underline">Aide</a>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Plus, Zap } from "lucide-react";
-import axios from "axios";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { competenceService } from "../../../lib/mockService";
 
 // Correspondance label affiché → niveau stocké en BDD
 const NIVEAUX_LABELS: { label: string; niveau: number; pct: number; color: string }[] = [
@@ -22,8 +21,6 @@ type Props = {
 };
 
 const AjoutCompetences = ({ employee, onClose, onSuccess }: Props) => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
   // Compétences déjà ajoutées dans ce modal
   const [liste, setListe]           = useState<CompetenceItem[]>([]);
@@ -41,9 +38,7 @@ const AjoutCompetences = ({ employee, onClose, onSuccess }: Props) => {
 
   // Charger le référentiel de compétences existantes
   useEffect(() => {
-    axios.get(`${API_URL}/competences/getall`, { headers })
-      .then((r) => setAllComps(r.data))
-      .catch(() => {});
+    setAllComps(competenceService.getAll());
   }, []);
 
   // Filtrer les suggestions en temps réel
@@ -75,25 +70,15 @@ const AjoutCompetences = ({ employee, onClose, onSuccess }: Props) => {
     setListe((prev) => prev.filter((c) => c.nom !== nom));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (liste.length === 0) { onSuccess(); onClose(); return; }
     setSaving(true); setError("");
     try {
-      // Envoyer chaque compétence une par une (l'API crée auto si inexistante)
-      await Promise.all(
-        liste.map((c) =>
-          axios.post(
-            `${API_URL}/competences/employee/${employee.userId}`,
-            { nom: c.nom, niveau: c.niveau },
-            { headers },
-          )
-        )
-      );
+      liste.forEach((c) => competenceService.addToEmployee(employee.userId, c));
       onSuccess();
       onClose();
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de l'enregistrement");
+      setError(e?.message || "Erreur lors de l'enregistrement");
     } finally { setSaving(false); }
   };
 

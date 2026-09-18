@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import axios from "axios";
 import { Button } from "../../../components/UI/Button";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { departementService } from "../../../lib/mockService";
 
 type Props = {
   onClose: () => void;
@@ -16,28 +15,15 @@ const AjoutDepartement = ({ onClose, onSuccess }: Props) => {
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState("");
 
-  const handleSubmit = async () => {
-    if (!nom.trim()) {
-      setError("Le nom du département est obligatoire");
-      return;
-    }
-    setSaving(true);
-    setError("");
+  const handleSubmit = () => {
+    if (!nom.trim()) { setError("Le nom du département est obligatoire"); return; }
+    setSaving(true); setError("");
     try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${API_URL}/departement/add`,
-        { nom: nom.trim(), description: description.trim() || undefined },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      onSuccess();
-      onClose();
+      departementService.create({ nom: nom.trim(), description: description.trim() || undefined });
+      onSuccess(); onClose();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la création");
-    } finally {
-      setSaving(false);
-    }
+      setError(err?.message || "Erreur lors de la création");
+    } finally { setSaving(false); }
   };
 
   return (

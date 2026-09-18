@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import axios from "axios";
 import { Button } from "../../../components/UI/Button";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { employeeService, evaluationService } from "../../../lib/mockService";
 
 type Employe = { userId: number; nom: string; prenom: string; poste?: string };
 
@@ -15,7 +14,6 @@ type Props = {
 };
 
 const AjoutEvaluation = ({ cycleId, criteres, onClose, onSuccess }: Props) => {
-  const token = localStorage.getItem("token");
   const evaluateur = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
 
   const [employes, setEmployes] = useState<Employe[]>([]);
@@ -29,12 +27,8 @@ const AjoutEvaluation = ({ cycleId, criteres, onClose, onSuccess }: Props) => {
   const [error, setError]       = useState("");
 
   useEffect(() => {
-    axios.get(`${API_URL}/employee/getall`, {
-      params: { page: 1, limit: 200 },
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => setEmployes(res.data.data ?? res.data))
-      .catch(() => setEmployes([]));
+    const result = employeeService.getAll(1, 200);
+    setEmployes(result.data);
   }, []);
 
   const handleNote = (critere: string, val: number) => {
@@ -42,28 +36,23 @@ const AjoutEvaluation = ({ cycleId, criteres, onClose, onSuccess }: Props) => {
     setNotes(prev => ({ ...prev, [critere]: clamped }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!userId)  { setError("Sélectionnez un employé"); return; }
     if (!date)    { setError("La date est obligatoire"); return; }
 
     setSaving(true); setError("");
     try {
-      await axios.post(
-        `${API_URL}/evaluation/add`,
-        {
-          userId:       Number(userId),
-          evaluateurId: evaluateur?.userId,
-          cycleId,
-          date,
-          notes_criteres: notes,
-          commentaire:    commentaire.trim() || undefined,
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      evaluationService.add({
+        userId:       Number(userId),
+        evaluateurId: evaluateur?.userId,
+        cycleId,
+        date,
+        notes_criteres: notes,
+        commentaire:    commentaire.trim() || undefined,
+      });
       onSuccess();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de l'enregistrement");
+      setError(err?.message || "Erreur lors de l'enregistrement");
     } finally { setSaving(false); }
   };
 

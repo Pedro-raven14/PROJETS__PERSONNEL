@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Award, Plus, Eye, Trash2, CalendarDays } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { cycleEvaluationService } from "../../../lib/mockService";
 import AjoutCycle from "./AjoutCycle";
 import ConsulterCycle from "./ConsulterCycle";
 
@@ -33,30 +32,19 @@ const CyclesEvaluation = () => {
   const [loading, setLoading]     = useState(true);
   const [showAjout, setShowAjout] = useState(false);
   const [cycleConsulte, setCycleConsulte] = useState<number | null>(null);
-  const token = localStorage.getItem("token");
 
-  const fetchCycles = async () => {
+  const fetchCycles = () => {
     setLoading(true);
-    try {
-      const res = await axios.get(`${API_URL}/cycle-evaluation/getall`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCycles(res.data);
-    } catch {
-      // silencieux
-    } finally { setLoading(false); }
+    try { setCycles(cycleEvaluationService.getAll() as Cycle[]); }
+    catch { /* silencieux */ } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchCycles(); }, []);
 
-  const handleDelete = async (cycleId: number) => {
+  const handleDelete = (cycleId: number) => {
     if (!confirm("Supprimer ce cycle ?")) return;
-    try {
-      await axios.delete(`${API_URL}/cycle-evaluation/${cycleId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchCycles();
-    } catch { /* silencieux */ }
+    cycleEvaluationService.delete(cycleId);
+    fetchCycles();
   };
 
   return (

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Sparkles, GraduationCap, Clock, Users, Zap } from "lucide-react";
-import axios from "axios";
-import { API_URL } from "../../../config/api";
+import { formationService } from "../../../lib/mockService";
 import FormationsBase from "../../../components/shared/FormationsBase";
 import ConsulterFormation from "../../../components/shared/ConsulterFormationShared";
 
@@ -42,27 +41,24 @@ const Formations = () => {
   const [selected, setSelected]               = useState<Formation | null>(null);
   const [refreshKey, setRefreshKey]           = useState(0);
 
-  const token = localStorage.getItem("token");
-
-  const fetchRecommandations = async () => {
+  const fetchRecommandations = () => {
     setLoadingReco(true);
     setRecoError(false);
     try {
-      const [recoRes, formRes] = await Promise.all([
-        axios.get(`${API_URL}/prediction/recommandations-formations`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${API_URL}/formation/getall?limit=100`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      const recos: Recommandation[] = recoRes.data.recommandations || [];
-      const formations: Formation[] = formRes.data.data ?? formRes.data;
-
+      const formations = formationService.getAll(100) as Formation[];
       const map: Record<number, Formation> = {};
       formations.forEach((f) => { map[f.formationId] = f; });
-
+      // Recommandations IA : formations auxquelles l'utilisateur n'est pas inscrit
+      const me = (() => { try { return JSON.parse(localStorage.getItem("employee") || "{}"); } catch { return {}; } })();
+      const nonInscrites = formations.filter((f) => !f.employes?.some((e) => e.userId === me.userId));
+      const recos: Recommandation[] = nonInscrites.slice(0, 5).map((f, i) => ({
+        rang: i + 1,
+        formationId: f.formationId,
+        formation: f.titre,
+        niveau: f.niveau,
+        score: Math.round(60 + Math.random() * 40),
+        competences_cibles: [],
+      }));
       setRecommandations(recos);
       setFormationsMap(map);
     } catch {

@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { Building2, Plus, Eye } from "lucide-react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 import { PageHeader } from "../../../components/element/PageHeader";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { departementService } from "../../../lib/mockService";
 import AjoutDepartement from "./AjoutDepartement";
 
 type Equipe = {
@@ -34,19 +33,11 @@ const Department = () => {
     catch { return '/admin'; }
   })();
 
-  const token = localStorage.getItem("token");
-
-  const fetchDepartments = async () => {
+  const fetchDepartments = () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/departement/getall`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // getall retourne { data, total, ... } avec pagination
-      setDepartments(res.data.data ?? res.data);
-    } catch {
-      // silencieux
-    } finally {
+      setDepartments(departementService.getAll());
+    } catch { /* silencieux */ } finally {
       setLoading(false);
     }
   };

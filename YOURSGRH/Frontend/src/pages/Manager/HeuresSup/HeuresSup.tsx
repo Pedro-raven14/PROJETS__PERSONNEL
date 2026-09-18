@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Check, X, Timer, Clock, CheckCircle, XCircle } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/UI/Tabs";
-import { API_URL } from "../../../config/api";
+import { heuresSupService } from "../../../lib/mockService";
 import { useIsMobile } from "../../../hooks/Use-mobile";
 
 type HeuresSup = {
@@ -30,20 +29,16 @@ const StatBox = ({ label, value, color, icon: Icon }: { label: string; value: nu
 );
 
 const HeuresSupManager = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
   const isMobile = useIsMobile();
+  const emp = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
 
   const [declarations, setDeclarations] = useState<HeuresSup[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [acting,       setActing]       = useState<number | null>(null);
 
-  const fetchData = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/heures-sup/mon-equipe`, { headers });
-      setDeclarations(res.data);
-    } catch { /* silencieux */ }
-    finally { setLoading(false); }
+  const fetchData = () => {
+    try { setDeclarations(heuresSupService.getMonEquipe(emp?.userId ?? 0) as HeuresSup[]); }
+    catch { /* silencieux */ } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -53,13 +48,14 @@ const HeuresSupManager = () => {
   const refusees      = declarations.filter((d) => d.statut === "REFUSEE");
   const totalValidees = validees.reduce((sum, d) => sum + Number(d.nb_heures), 0);
 
-  const handleAction = async (id: number, statut: "VALIDEE" | "REFUSEE") => {
+  const handleAction = (id: number, statut: "VALIDEE" | "REFUSEE") => {
     setActing(id);
     try {
-      await axios.patch(`${API_URL}/heures-sup/${id}/valider`, { statut }, { headers });
+      heuresSupService.valider(id, statut, emp?.userId ?? 0);
       setDeclarations((prev) => prev.map((d) => d.heuresSupId === id ? { ...d, statut } : d));
-    } catch { fetchData(); }
-    finally { setActing(null); }
+    } catch { fetchData(); } finally {
+      setActing(null);
+    }
   };
 
   const ListeDeclarations = ({ items, showActions = false }: { items: HeuresSup[]; showActions?: boolean }) => {

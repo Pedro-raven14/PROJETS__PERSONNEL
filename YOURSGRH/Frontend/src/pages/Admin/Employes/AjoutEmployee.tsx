@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
-import axios from "axios";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
-import { emailService } from "../../../services/emailService";
+import { employeeService } from "../../../lib/mockService";
 
 type Role = { roleId: number; nom: string };
 
@@ -13,8 +11,6 @@ type Props = {
 };
 
 const AjoutEmployee = ({ onClose, onSuccess }: Props) => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
   // Champs du formulaire
   const [nom,      setNom]      = useState("");
@@ -31,9 +27,7 @@ const AjoutEmployee = ({ onClose, onSuccess }: Props) => {
   const [error,        setError]        = useState("");
 
   useEffect(() => {
-    axios.get(`${API_URL}/role/getall`, { headers })
-      .then((res) => setRoles(res.data))
-      .catch(() => {});
+    setRoles(employeeService.getAllRoles());
   }, []);
 
   const handleSubmit = async () => {
@@ -57,24 +51,14 @@ const AjoutEmployee = ({ onClose, onSuccess }: Props) => {
     setSaving(true);
     setError("");
     try {
-      const res = await axios.post(
-        `${API_URL}/employee/createEmployee`,
-        { nom: nom.trim(), prenom: prenom.trim(), email: email.trim(), password, phone: phone.trim(), poste: poste.trim() || undefined, role: roleId },
-        { headers },
-      );
-
-      // Envoyer l'email de bienvenue avec les identifiants (silencieux si échec)
-      emailService.sendUserCredentials({
-        email:        email.trim(),
-        nom:          nom.trim(),
-        prenom:       prenom.trim(),
-        passwordTemp: password,
+      const result = employeeService.create({
+        nom: nom.trim(), prenom: prenom.trim(), email: email.trim(),
+        password, phone: phone.trim(), poste: poste.trim() || undefined,
+        role: roleId,
       });
-
-      onSuccess({ userId: res.data.employee.userId, prenom: res.data.employee.prenom, nom: res.data.employee.nom });
+      onSuccess({ userId: result.employee.userId, prenom: result.employee.prenom, nom: result.employee.nom });
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la création");
+      setError(e?.message || "Erreur lors de la création");
     } finally {
       setSaving(false);
     }

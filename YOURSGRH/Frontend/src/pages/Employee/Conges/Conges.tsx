@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Plus, X, CalendarDays, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { congeService, typeCongeService, employeeService } from "../../../lib/mockService";
 
 type TypeConge = { typeCId: number; nomType: string };
 
@@ -24,9 +23,6 @@ const nbJours = (d1: string, d2: string) =>
 const MOIS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
 const MesConges = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
-
   const employee = (() => {
     try { return JSON.parse(localStorage.getItem('employee') || 'null'); } catch { return null; }
   })();
@@ -38,61 +34,42 @@ const MesConges = () => {
   const [showModal,   setShowModal]   = useState(false);
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState("");
-
-  // Formulaire
   const [typeCId,     setTypeCId]     = useState<number | "">("");
   const [dateDebut,   setDateDebut]   = useState("");
   const [dateFin,     setDateFin]     = useState("");
   const [commentaire, setCommentaire] = useState("");
 
-  const fetchData = async () => {
+  const fetchData = () => {
     try {
-      const [congesRes, typesRes, empRes] = await Promise.all([
-        axios.get(`${API_URL}/conge/mes-conges`, { headers }),
-        axios.get(`${API_URL}/type-conge/getall`, { headers }),
-        axios.get(`${API_URL}/employee/${employee?.userId}`, { headers }),
-      ]);
-      setConges(congesRes.data);
-      setTypesConge(typesRes.data);
-      setSolde(empRes.data.soldeConges ?? 0);
-    } catch { /* silencieux */ }
-    finally { setLoading(false); }
+      setConges(congeService.getMesConges(employee?.userId ?? 0) as Conge[]);
+      setTypesConge(typeCongeService.getAll() as TypeConge[]);
+      const emp = employeeService.getById(employee?.userId ?? 0);
+      setSolde(emp?.soldeConges ?? 0);
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleDemander = async () => {
-    if (!typeCId || !dateDebut || !dateFin) {
-      setError("Type, date de début et date de fin sont obligatoires");
-      return;
-    }
-    if (dateFin < dateDebut) {
-      setError("La date de fin doit être égale ou postérieure à la date de début");
-      return;
-    }
+  const handleDemander = () => {
+    if (!typeCId || !dateDebut || !dateFin) { setError("Type, date de début et date de fin sont obligatoires"); return; }
+    if (dateFin < dateDebut) { setError("La date de fin doit être égale ou postérieure à la date de début"); return; }
     setSaving(true); setError("");
     try {
-      await axios.post(`${API_URL}/conge/demander`, {
-        typeCId: Number(typeCId),
-        date_debut: dateDebut,
-        date_fin: dateFin,
-        commentaire: commentaire.trim() || undefined,
-      }, { headers });
+      congeService.demander(employee?.userId ?? 0, { typeCId: Number(typeCId), date_debut: dateDebut, date_fin: dateFin, commentaire: commentaire.trim() || undefined });
       setShowModal(false);
       setTypeCId(""); setDateDebut(""); setDateFin(""); setCommentaire("");
       fetchData();
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la demande");
+      setError(e?.message || "Erreur lors de la demande");
     } finally { setSaving(false); }
   };
 
-  const handleAnnuler = async (congeId: number) => {
+  const handleAnnuler = (congeId: number) => {
     if (!confirm("Annuler cette demande ?")) return;
-    try {
-      await axios.delete(`${API_URL}/conge/${congeId}/annuler`, { headers });
-      setConges((prev) => prev.filter((c) => c.congeId !== congeId));
-    } catch { /* silencieux */ }
+    congeService.annuler(congeId);
+    setConges((prev) => prev.filter((c) => c.congeId !== congeId));
   };
 
   // Congés validés pour le calendrier

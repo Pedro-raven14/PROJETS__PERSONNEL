@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
-import { FileText, PenLine, Eye, CheckCircle, Clock, X, Printer, Download, ArrowLeft } from "lucide-react";
+import { FileText, PenLine, Eye, CheckCircle, Clock, X, ArrowLeft } from "lucide-react";
 import { PageHeader } from "../element/PageHeader";
-import { API_URL } from "../../config/api";
+import { contratService } from "../../lib/mockService";
 
 type Contrat = {
   contratId: number;
@@ -29,8 +28,6 @@ const ModalSignature = ({
   onClose: () => void;
   onSigned: () => void;
 }) => {
-  const token      = localStorage.getItem("token");
-  const headers    = { Authorization: `Bearer ${token}` };
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const drawing    = useRef(false);
   const [saving,   setSaving]  = useState(false);
@@ -99,27 +96,18 @@ const ModalSignature = ({
     setHasDrawn(false);
   };
 
-  const confirmer = async () => {
+  const confirmer = () => {
     if (!hasDrawn) { setError("Veuillez dessiner votre signature"); return; }
     const canvas = canvasRef.current;
     if (!canvas) return;
     const signatureBase64 = canvas.toDataURL("image/png");
-    setSaving(true);
-    setError("");
+    setSaving(true); setError("");
     try {
-      await axios.post(
-        `${API_URL}/contrat/${contrat.contratId}/signer`,
-        { signature: signatureBase64 },
-        { headers },
-      );
-      onSigned();
-      onClose();
+      contratService.signer(contrat.contratId, signatureBase64);
+      onSigned(); onClose();
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la signature");
-    } finally {
-      setSaving(false);
-    }
+      setError(e?.message || "Erreur lors de la signature");
+    } finally { setSaving(false); }
   };
 
   return (
@@ -199,37 +187,24 @@ const ModalSignature = ({
 };
 
 // ── Viewer PDF ────────────────────────────────────────────────────────────────
-
+// En mode démo, pas de PDF réel disponible — on affiche un message
 const PdfViewer = ({ contrat, onClose }: { contrat: Contrat; onClose: () => void }) => {
-  const token    = localStorage.getItem("token");
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const pdfUrl   = `${API_URL}/contrat/${contrat.contratId}/document?token=${token}`;
-
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 110, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.5rem', backgroundColor: 'var(--color-card)', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-muted-foreground)', fontFamily: 'var(--font-display)', fontSize: '0.875rem', padding: '0.375rem 0.5rem', borderRadius: '0.375rem' }}>
-            <ArrowLeft style={{ width: '16px', height: '16px' }} /> Retour
-          </button>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem' }}>
-            Contrat {contrat.type} — {contrat.poste}
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            onClick={() => { iframeRef.current?.contentWindow?.focus(); iframeRef.current?.contentWindow?.print(); }}
-            style={{ ...btnOutline, display: 'flex', alignItems: 'center', gap: '0.375rem' }}
-          >
-            <Printer style={{ width: '14px', height: '14px' }} /> Imprimer
-          </button>
-          <a href={pdfUrl} download={`contrat_${contrat.type}.pdf`} style={{ ...btnPrimary, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <Download style={{ width: '14px', height: '14px' }} /> Télécharger
-          </a>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1.5rem', backgroundColor: 'var(--color-card)', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+        <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-muted-foreground)', fontFamily: 'var(--font-display)', fontSize: '0.875rem', padding: '0.375rem 0.5rem', borderRadius: '0.375rem' }}>
+          <ArrowLeft style={{ width: '16px', height: '16px' }} /> Retour
+        </button>
+        <span style={{ marginLeft: '1rem', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9375rem' }}>
+          Contrat {contrat.type} — {contrat.poste}
+        </span>
       </div>
-      <div style={{ flex: 1, backgroundColor: '#525659' }}>
-        <iframe ref={iframeRef} src={pdfUrl} style={{ width: '100%', height: '100%', border: 'none' }} title="Contrat PDF" />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#525659' }}>
+        <div style={{ textAlign: 'center', color: 'white' }}>
+          <FileText style={{ width: '3rem', height: '3rem', margin: '0 auto 1rem', opacity: 0.6 }} />
+          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>PDF non disponible en mode démo</p>
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', opacity: 0.7 }}>Les documents PDF nécessitent le backend</p>
+        </div>
       </div>
     </div>
   );
@@ -238,26 +213,22 @@ const PdfViewer = ({ contrat, onClose }: { contrat: Contrat; onClose: () => void
 // ── Page principale ───────────────────────────────────────────────────────────
 
 const MesContrats = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
-
   const [contrats,  setContrats]  = useState<Contrat[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [signing,   setSigning]   = useState<Contrat | null>(null);
   const [viewing,   setViewing]   = useState<Contrat | null>(null);
 
-  const fetchContrats = async () => {
+  const fetchContrats = () => {
     try {
-      const res = await axios.get(`${API_URL}/contrat/mes-contrats`, { headers });
-      const sorted = [...(res.data.data ?? res.data)].sort((a, b) => {
+      const emp = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
+      const data = contratService.getMesContrats(emp?.userId ?? 0) as Contrat[];
+      const sorted = [...data].sort((a, b) => {
         if (a.statut === 'ACTIF' && b.statut !== 'ACTIF') return -1;
         if (b.statut === 'ACTIF' && a.statut !== 'ACTIF') return 1;
         return new Date(b.date_debut).getTime() - new Date(a.date_debut).getTime();
       });
       setContrats(sorted);
-    } catch {
-      // silencieux
-    } finally {
+    } catch { /* silencieux */ } finally {
       setLoading(false);
     }
   };

@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { Check, X, CalendarDays, Plus, Trash2, Settings } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/UI/Tabs";
-import { API_URL } from "../../../config/api";
+import { congeService, typeCongeService } from "../../../lib/mockService";
 import { useIsMobile } from "../../../hooks/Use-mobile";
 
 type TypeConge = {
@@ -38,37 +37,28 @@ const ModalTypes = ({
   onClose: () => void;
   onRefresh: () => void;
 }) => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
   const [nomType,         setNomType]         = useState("");
   const [impacteSalaire,  setImpacteSalaire]  = useState(false);
   const [saving,          setSaving]          = useState(false);
   const [error,           setError]           = useState("");
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!nomType.trim()) { setError("Le nom est obligatoire"); return; }
     setSaving(true); setError("");
     try {
-      await axios.post(
-        `${API_URL}/type-conge/add`,
-        { nomType: nomType.trim(), impacte_salaire: impacteSalaire },
-        { headers },
-      );
+      typeCongeService.add({ nomType: nomType.trim(), impacte_salaire: impacteSalaire });
       setNomType(""); setImpacteSalaire(false);
       onRefresh();
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la création");
+      setError(e?.message || "Erreur lors de la création");
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     if (!confirm("Supprimer ce type de congé ?")) return;
-    try {
-      await axios.delete(`${API_URL}/type-conge/${id}`, { headers });
-      onRefresh();
-    } catch { /* silencieux */ }
+    typeCongeService.delete(id);
+    onRefresh();
   };
 
   return (
@@ -182,25 +172,19 @@ const ModalTypes = ({
 // ── Page principale ───────────────────────────────────────────────────────────
 
 const CongesAdmin = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
+  const [conges,    setConges]    = useState<Conge[]>([]);
+  const [types,     setTypes]     = useState<TypeConge[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [acting,    setActing]    = useState<number | null>(null);
+  const [showTypes, setShowTypes] = useState(false);
 
-  const [conges,      setConges]      = useState<Conge[]>([]);
-  const [types,       setTypes]       = useState<TypeConge[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [acting,      setActing]      = useState<number | null>(null);
-  const [showTypes,   setShowTypes]   = useState(false);
-
-  const fetchAll = async () => {
+  const fetchAll = () => {
     try {
-      const [congesRes, typesRes] = await Promise.all([
-        axios.get(`${API_URL}/conge/getall?limit=1000`, { headers }),
-        axios.get(`${API_URL}/type-conge/getall`, { headers }),
-      ]);
-      setConges(congesRes.data.data ?? congesRes.data);
-      setTypes(typesRes.data);
-    } catch { /* silencieux */ }
-    finally { setLoading(false); }
+      setConges(congeService.getAll(1000) as Conge[]);
+      setTypes(typeCongeService.getAll() as TypeConge[]);
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchAll(); }, []);
@@ -209,13 +193,15 @@ const CongesAdmin = () => {
   const approuves = conges.filter((c) => c.statut === 'APPROUVE');
   const refuses   = conges.filter((c) => c.statut === 'REFUSE');
 
-  const handleAction = async (congeId: number, statut: 'APPROUVE' | 'REFUSE') => {
+  const handleAction = (congeId: number, statut: 'APPROUVE' | 'REFUSE') => {
     setActing(congeId);
     try {
-      await axios.patch(`${API_URL}/conge/${congeId}/valider`, { statut }, { headers });
+      const emp = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
+      congeService.valider(congeId, statut, emp?.userId ?? 0);
       setConges((prev) => prev.map((c) => c.congeId === congeId ? { ...c, statut } : c));
-    } catch { fetchAll(); }
-    finally { setActing(null); }
+    } catch { fetchAll(); } finally {
+      setActing(null);
+    }
   };
 
   const isMobile = useIsMobile();

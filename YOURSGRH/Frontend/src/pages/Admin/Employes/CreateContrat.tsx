@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { X, FileText, CheckCircle } from "lucide-react";
-import axios from "axios";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { contratService } from "../../../lib/mockService";
 
 type Props = {
   employee: { userId: number; prenom: string; nom: string };
@@ -13,8 +12,6 @@ type Props = {
 const TYPES_CONTRAT = ["CDI", "CDD", "STAGE", "FREELANCE", "ALTERNANCE"];
 
 const CreateContrat = ({ employee, onClose, onSuccess }: Props) => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
   const [type,       setType]       = useState("CDI");
   const [dateDebut,  setDateDebut]  = useState(new Date().toISOString().split("T")[0]);
@@ -48,23 +45,18 @@ const CreateContrat = ({ employee, onClose, onSuccess }: Props) => {
     setSaving(true);
     setError("");
     try {
-      await axios.post(
-        `${API_URL}/contrat/add`,
-        {
-          type,
-          date_debut: dateDebut,
-          date_fin:   isCDI ? undefined : dateFin,
-          poste:      poste.trim(),
-          salaire:    Number(salaire),
-          userId:     employee.userId,
-        },
-        { headers },
-      );
+      contratService.add({
+        type,
+        date_debut: dateDebut,
+        date_fin:   isCDI ? undefined : dateFin,
+        poste:      poste.trim(),
+        salaire:    Number(salaire),
+        userId:     employee.userId,
+      });
       setSuccess(true);
       setTimeout(() => { onSuccess(); }, 1800);
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la création du contrat");
+      setError(e?.message || "Erreur lors de la création du contrat");
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { ArrowLeft, Printer, Download, AlertCircle, CheckCircle, Clock } from "lucide-react";
-import { API_URL } from "../../../config/api";
 
 type Contrat = {
   contratId: number;
@@ -25,15 +24,9 @@ const ContratViewer = ({ contrat, employee, onClose }: Props) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeError, setIframeError] = useState(false);
 
-  const token = localStorage.getItem("token");
-
-  // Utiliser le PDF signé si disponible, sinon le PDF brut
-  const hasPdf = !!(contrat.documentSignePath || contrat.documentPath);
-
-  // URL du PDF avec le token en query param pour l'authentification
-  const pdfUrl = hasPdf
-    ? `${API_URL}/contrat/${contrat.contratId}/document?token=${token}`
-    : null;
+  // En mode démo, aucun PDF réel n'est disponible
+  const hasPdf = false;
+  const pdfUrl: string | null = null;
 
   const handlePrint = () => {
     if (iframeRef.current?.contentWindow) {

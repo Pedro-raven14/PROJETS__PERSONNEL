@@ -3,11 +3,13 @@ import {
   CalendarDays, FileText, GraduationCap, Award,
   Loader2, CheckCircle, Users,
 } from "lucide-react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
-import { API_URL } from "../../../config/api";
+import {
+  congeService, contratService, formationService,
+  evaluationService, employeeService,
+} from "../../../lib/mockService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,9 +68,7 @@ function StatCard({ icon: Icon, label, value, sub, color = "var(--color-primary)
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
   const employee = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
-  const headers = { Authorization: `Bearer ${token}` };
 
   const [conges, setConges]           = useState<Conge[]>([]);
   const [contratActif, setContrat]    = useState<Contrat | null>(null);
@@ -80,33 +80,27 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!employee?.userId) return;
-    Promise.all([
-      axios.get(`${API_URL}/conge/mes-conges`, { headers }),
-      axios.get(`${API_URL}/contrat/mes-contrats`, { headers }),
-      axios.get(`${API_URL}/formation/employee/${employee.userId}`, { headers }),
-      axios.get(`${API_URL}/evaluation/employee/${employee.userId}`, { headers }),
-      axios.get(`${API_URL}/employee/getall`, { params: { page: 1, limit: 100 }, headers }),
-      axios.get(`${API_URL}/employee/${employee.userId}`, { headers }),
-    ]).then(([cRes, ctRes, fRes, eRes, empRes, meRes]) => {
-      const mesConges: Conge[] = cRes.data?.data ?? cRes.data ?? [];
+    try {
+      const mesConges = congeService.getMesConges(employee.userId) as Conge[];
       setConges(mesConges.slice(0, 4));
 
-      const mesContrats: Contrat[] = ctRes.data?.data ?? ctRes.data ?? [];
-      setContrat(mesContrats.find((c: Contrat) => c.statut === "ACTIF") ?? null);
+      const mesContrats = contratService.getMesContrats(employee.userId) as Contrat[];
+      setContrat(mesContrats.find((c) => c.statut === "ACTIF") ?? null);
 
-      const mesFormations: Formation[] = fRes.data?.data ?? fRes.data ?? [];
+      const mesFormations = formationService.getByEmployee(employee.userId) as Formation[];
       setFormations(mesFormations.slice(0, 3));
 
-      const mesEvals: Evaluation[] = eRes.data?.data ?? eRes.data ?? [];
+      const mesEvals = evaluationService.getByEmployee(employee.userId) as Evaluation[];
       setEvals(mesEvals.slice(0, 3));
 
-      // Membres de l'équipe (hors soi-même)
-      const allEmps: MembreEquipe[] = empRes.data?.data ?? empRes.data ?? [];
+      const allEmps = employeeService.getAll(1, 100).data as MembreEquipe[];
       setEquipe(allEmps.filter((e: any) => e.userId !== employee.userId && e.role?.nom === "EMPLOYEE").slice(0, 4));
 
-      // Solde congés frais depuis l'API
-      setSoldeConges(meRes.data?.soldeConges ?? 0);
-    }).catch(() => {}).finally(() => setLoading(false));
+      const moi = employeeService.getById(employee.userId);
+      setSoldeConges(moi?.soldeConges ?? 0);
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   }, [employee?.userId]);
 
   const dernEval = evaluations[0];

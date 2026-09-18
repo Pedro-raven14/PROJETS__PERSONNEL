@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Users, Building2, BarChart3, Award, Briefcase } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
-import { API_URL } from "../../../config/api";
+import { employeeService, equipeService, objectifService } from "../../../lib/mockService";
 
 type Objectif = {
   objectifId: number; titre: string; status: string;
@@ -44,32 +43,24 @@ const StatBox = ({ icon: Icon, label, value, color }: { icon: React.ElementType;
 );
 
 const MonEquipe = () => {
-  const token     = localStorage.getItem("token");
-  const headers   = { Authorization: `Bearer ${token}` };
   const empLocal  = JSON.parse(localStorage.getItem("employee") || "{}");
   const userId    = empLocal?.userId;
 
-  const [equipe,   setEquipe]   = useState<Equipe | null>(null);
-  const [objectifs,setObjectifs]= useState<Objectif[]>([]);
-  const [loading,  setLoading]  = useState(true);
+  const [equipe,   setEquipe]    = useState<Equipe | null>(null);
+  const [objectifs,setObjectifs] = useState<Objectif[]>([]);
+  const [loading,  setLoading]   = useState(true);
 
   useEffect(() => {
     if (!userId) return;
-    // 1. Récupérer l'employé pour avoir son equipeId
-    axios.get(`${API_URL}/employee/${userId}`, { headers })
-      .then(async (empRes) => {
-        const equipeId = empRes.data?.equipe?.equipeId;
-        if (!equipeId) { setLoading(false); return; }
-        // 2. Charger l'équipe complète
-        const [equipeRes, objRes] = await Promise.all([
-          axios.get(`${API_URL}/equipe/${equipeId}`, { headers }),
-          axios.get(`${API_URL}/objectif/equipe/${equipeId}`, { headers }).catch(() => ({ data: [] })),
-        ]);
-        setEquipe(equipeRes.data);
-        setObjectifs(objRes.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    try {
+      const emp = employeeService.getById(userId);
+      const equipeId = emp?.equipe?.equipeId;
+      if (!equipeId) { setLoading(false); return; }
+      setEquipe(equipeService.getById(equipeId) as Equipe);
+      setObjectifs(objectifService.getByEquipe(equipeId) as Objectif[]);
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   if (loading) return <p style={{ padding: '2rem', color: 'var(--color-muted-foreground)' }}>Chargement...</p>;

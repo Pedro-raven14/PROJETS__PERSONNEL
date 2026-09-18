@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { X, Tag } from "lucide-react";
-import axios from "axios";
 import { Button } from "../../../components/UI/Button";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { formationService, competenceService } from "../../../lib/mockService";
 
 type Props = {
   onClose: () => void;
@@ -30,12 +29,8 @@ const AjoutFormation = ({ onClose, onSuccess }: Props) => {
   const [selectedIds, setSelectedIds]             = useState<number[]>([]);
   const [searchComp, setSearchComp]               = useState("");
 
-  const token = localStorage.getItem("token");
-
   useEffect(() => {
-    axios.get(`${API_URL}/competences/getall`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => setToutesCompetences(r.data))
-      .catch(() => {});
+    setToutesCompetences(competenceService.getAll());
   }, []);
 
   const toggleCompetence = (id: number) => {
@@ -62,25 +57,20 @@ const AjoutFormation = ({ onClose, onSuccess }: Props) => {
 
     setSaving(true); setError("");
     try {
-      await axios.post(
-        `${API_URL}/formation/add`,
-        {
-          titre: titre.trim(),
-          description: description.trim() || undefined,
-          heures_par_jour: Number(heuresParJour),
-          niveau,
-          date_debut: dateDebut,
-          date_fin: dateFin,
-          capacite: Number(capacite),
-          competenceIds: selectedIds,
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      onSuccess();
-      onClose();
+      formationService.add({
+        titre: titre.trim(),
+        description: description.trim() || undefined,
+        heures_par_jour: Number(heuresParJour),
+        niveau,
+        date_debut: dateDebut,
+        date_fin: dateFin,
+        capacite: Number(capacite),
+        competenceIds: selectedIds,
+        duree: Number(heuresParJour) * Math.ceil((new Date(dateFin).getTime() - new Date(dateDebut).getTime()) / (1000 * 60 * 60 * 24) + 1),
+      });
+      onSuccess(); onClose();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la création");
+      setError(err?.message || "Erreur lors de la création");
     } finally { setSaving(false); }
   };
 

@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { GraduationCap, Plus, Clock, Users, CalendarDays, CheckCircle } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../element/PageHeader";
 import { Button } from "../UI/Button";
-import { API_URL } from "../../config/api";
+import { formationService } from "../../lib/mockService";
 import ConsulterFormation from "./ConsulterFormationShared";
 
 type Formation = {
@@ -38,19 +37,13 @@ const FormationsBase = ({ peutCreer = false, visionGlobale = false, AjoutFormati
   const [showAjout, setShowAjout]     = useState(false);
   const [selected, setSelected]       = useState<Formation | null>(null);
 
-  const token = localStorage.getItem("token");
   const me    = (() => { try { return JSON.parse(localStorage.getItem("employee") || "{}"); } catch { return {}; } })();
 
-  const fetchFormations = async () => {
+  const fetchFormations = () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/formation/getall?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFormations(res.data.data ?? res.data);
-    } catch {
-      // silencieux
-    } finally {
+      setFormations(formationService.getAll(100) as Formation[]);
+    } catch { /* silencieux */ } finally {
       setLoading(false);
     }
   };

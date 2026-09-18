@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Plus, X, Clock, CheckCircle, XCircle, Trash2, Timer } from "lucide-react";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { Input } from "../../../components/UI/Input";
-import { API_URL } from "../../../config/api";
+import { heuresSupService } from "../../../lib/mockService";
 
 type HeuresSup = {
   heuresSupId: number;
@@ -15,62 +14,42 @@ type HeuresSup = {
 };
 
 const MesHeuresSup = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
+  const emp = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
 
   const [declarations, setDeclarations] = useState<HeuresSup[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [showModal,    setShowModal]    = useState(false);
   const [saving,       setSaving]       = useState(false);
   const [error,        setError]        = useState("");
+  const [date,     setDate]     = useState("");
+  const [nbHeures, setNbHeures] = useState("");
+  const [motif,    setMotif]    = useState("");
 
-  // Formulaire
-  const [date,      setDate]      = useState("");
-  const [nbHeures,  setNbHeures]  = useState("");
-  const [motif,     setMotif]     = useState("");
-
-  const fetchData = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/heures-sup/mes-declarations`, { headers });
-      setDeclarations(res.data);
-    } catch { /* silencieux */ }
-    finally { setLoading(false); }
+  const fetchData = () => {
+    try { setDeclarations(heuresSupService.getMesDeclarations(emp?.userId ?? 0) as HeuresSup[]); }
+    catch { /* silencieux */ } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleDeclarer = async () => {
-    if (!date || !nbHeures) {
-      setError("La date et le nombre d'heures sont obligatoires");
-      return;
-    }
+  const handleDeclarer = () => {
+    if (!date || !nbHeures) { setError("La date et le nombre d'heures sont obligatoires"); return; }
     const nb = parseFloat(nbHeures);
-    if (isNaN(nb) || nb < 0.5 || nb > 24) {
-      setError("Le nombre d'heures doit être compris entre 0.5 et 24");
-      return;
-    }
+    if (isNaN(nb) || nb < 0.5 || nb > 24) { setError("Le nombre d'heures doit être compris entre 0.5 et 24"); return; }
     setSaving(true); setError("");
     try {
-      await axios.post(`${API_URL}/heures-sup/declarer`, {
-        date,
-        nb_heures: nb,
-        motif: motif.trim() || undefined,
-      }, { headers });
-      setShowModal(false);
-      setDate(""); setNbHeures(""); setMotif("");
+      heuresSupService.declarer(emp?.userId ?? 0, { date, nb_heures: nb, motif: motif.trim() || undefined });
+      setShowModal(false); setDate(""); setNbHeures(""); setMotif("");
       fetchData();
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la déclaration");
+      setError(e?.message || "Erreur lors de la déclaration");
     } finally { setSaving(false); }
   };
 
-  const handleAnnuler = async (id: number) => {
+  const handleAnnuler = (id: number) => {
     if (!confirm("Annuler cette déclaration ?")) return;
-    try {
-      await axios.delete(`${API_URL}/heures-sup/${id}/annuler`, { headers });
-      setDeclarations((prev) => prev.filter((d) => d.heuresSupId !== id));
-    } catch { /* silencieux */ }
+    heuresSupService.annuler(id);
+    setDeclarations((prev) => prev.filter((d) => d.heuresSupId !== id));
   };
 
   const enAttente = declarations.filter((d) => d.statut === "EN_ATTENTE").length;

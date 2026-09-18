@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { X, Briefcase, CalendarDays } from "lucide-react";
-import axios from "axios";
 import { Input } from "../../../components/UI/Input";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
-import { API_URL } from "../../../config/api";
+import { employeeService } from "../../../lib/mockService";
 
 type Employee = {
   userId: number;
@@ -22,15 +21,13 @@ type Props = {
 };
 
 const ModifierEmployee = ({ employee, onClose, onSuccess }: Props) => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
   const [poste,       setPoste]       = useState(employee.poste ?? "");
   const [soldeConges, setSoldeConges] = useState(String(employee.soldeConges));
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState("");
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     const solde = Number(soldeConges);
     if (isNaN(solde) || solde < 0) {
       setError("Le solde de congés doit être un nombre positif");
@@ -39,19 +36,14 @@ const ModifierEmployee = ({ employee, onClose, onSuccess }: Props) => {
     setSaving(true);
     setError("");
     try {
-      const res = await axios.patch(
-        `${API_URL}/employee/${employee.userId}`,
-        {
-          poste:       poste.trim() || undefined,
-          soldeConges: solde,
-        },
-        { headers },
-      );
-      onSuccess(res.data);
+      const updated = employeeService.update(employee.userId, {
+        poste:       poste.trim() || undefined,
+        soldeConges: solde,
+      });
+      onSuccess(updated);
       onClose();
     } catch (e: any) {
-      const msg = e.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la modification");
+      setError(e?.message || "Erreur lors de la modification");
     } finally {
       setSaving(false);
     }

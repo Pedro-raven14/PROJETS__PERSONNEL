@@ -1,12 +1,9 @@
 import { useEffect, useState } from "react";
 import { Users, CalendarDays, Target, Award, Loader2, CheckCircle, Clock, XCircle } from "lucide-react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "../../../components/element/PageHeader";
 import { AvatarInitials } from "../../../components/element/AvatarInitials";
-import { API_URL } from "../../../config/api";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { employeeService, congeService, objectifService, evaluationService } from "../../../lib/mockService";
 
 type Membre = { userId: number; nom: string; prenom: string; poste?: string; soldeConges: number };
 type Conge = {
@@ -57,39 +54,30 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const employee = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
-  const headers = { Authorization: `Bearer ${token}` };
 
-  const [membres, setMembres]       = useState<Membre[]>([]);
-  const [conges, setConges]         = useState<Conge[]>([]);
-  const [objectifs, setObjectifs]   = useState<Objectif[]>([]);
+  const [membres, setMembres]         = useState<Membre[]>([]);
+  const [conges, setConges]           = useState<Conge[]>([]);
+  const [objectifs, setObjectifs]     = useState<Objectif[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading]         = useState(true);
 
   useEffect(() => {
     if (!employee?.userId) return;
-    Promise.all([
-      // Équipe du manager → on récupère via l'équipe
-      axios.get(`${API_URL}/employee/getall`, { params: { page: 1, limit: 100 }, headers }),
-      // Congés à valider
-      axios.get(`${API_URL}/conge/getall`, { params: { page: 1, limit: 50 }, headers }),
-      // Objectifs (tous — filtrés côté frontend)
-      axios.get(`${API_URL}/objectif/getall`, { headers }).catch(() => ({ data: [] })),
-      // Évaluations par cet évaluateur
-      axios.get(`${API_URL}/evaluation/evaluateur/${employee.userId}`, { headers }).catch(() => ({ data: [] })),
-    ]).then(([empRes, congeRes, objRes, evalRes]) => {
-      // Membres : ceux qui ont une équipe (approximation — on prend tous sauf managers/RH/admin)
-      const allEmps: Membre[] = empRes.data?.data ?? empRes.data ?? [];
-      setMembres(allEmps.filter((e: any) => e.role?.nom === "EMPLOYEE").slice(0, 6));
+    try {
+      const allEmps = employeeService.getAll(1, 100).data;
+      setMembres((allEmps as any[]).filter((e: any) => e.role?.nom === "EMPLOYEE").slice(0, 6));
 
-      const allConges: Conge[] = congeRes.data?.data ?? congeRes.data ?? [];
-      setConges(allConges.filter((c: Conge) => c.statut === "EN_ATTENTE").slice(0, 5));
+      const allConges = congeService.getAll(50) as Conge[];
+      setConges(allConges.filter((c) => c.statut === "EN_ATTENTE").slice(0, 5));
 
-      const allObj: Objectif[] = objRes.data?.data ?? objRes.data ?? [];
-      setObjectifs(allObj.filter((o: Objectif) => o.status === "EN_COURS").slice(0, 4));
+      const allObj = objectifService.getAll() as Objectif[];
+      setObjectifs(allObj.filter((o) => o.status === "EN_COURS").slice(0, 4));
 
-      const allEval: Evaluation[] = evalRes.data?.data ?? evalRes.data ?? [];
+      const allEval = evaluationService.getByEvaluateur(employee.userId) as Evaluation[];
       setEvaluations(allEval.slice(0, 4));
-    }).catch(() => {}).finally(() => setLoading(false));
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   }, [employee?.userId]);
 
   const objTermines = objectifs.filter(o => o.status === "ATTEINT").length;

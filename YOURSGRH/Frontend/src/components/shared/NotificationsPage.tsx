@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   Bell, FileText, CalendarDays, Award,
   GraduationCap, Brain, CheckCheck, Loader2, PenLine, Wallet,
 } from "lucide-react";
 import { PageHeader } from "../element/PageHeader";
-import { API_URL } from "../../config/api";
+import { notificationService } from "../../lib/mockService";
 import { useUnreadCount } from "../../hooks/Use-notifications";
 
 type Notification = {
@@ -49,27 +48,21 @@ const formatDate = (dateStr: string) => {
 };
 
 const NotificationsPage = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
   const navigate = useNavigate();
   const { decrement, reset } = useUnreadCount();
 
-  const role = (() => {
-    try { return JSON.parse(localStorage.getItem('employee') || 'null')?.role?.toLowerCase() || 'employee'; }
-    catch { return 'employee'; }
-  })();
+  const emp = (() => { try { return JSON.parse(localStorage.getItem('employee') || 'null'); } catch { return null; } })();
+  const userId = emp?.userId ?? 0;
+  const role = emp?.role?.nom?.toLowerCase() || emp?.role?.toLowerCase() || 'employee';
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading,       setLoading]       = useState(true);
   const [markingAll,    setMarkingAll]    = useState(false);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = () => {
     try {
-      const res = await axios.get(`${API_URL}/notification/mes-notifications?limit=100`, { headers });
-      setNotifications(res.data.data ?? res.data);
-    } catch {
-      // silencieux
-    } finally {
+      setNotifications(notificationService.getMesNotifications(userId, 100) as Notification[]);
+    } catch { /* silencieux */ } finally {
       setLoading(false);
     }
   };
@@ -78,30 +71,20 @@ const NotificationsPage = () => {
 
   const nbNonLues = notifications.filter((n) => !n.lu).length;
 
-  const marquerLue = async (notifId: number) => {
-    // Mise à jour optimiste — badge décrémenté immédiatement
+  const marquerLue = (notifId: number) => {
     setNotifications((prev) =>
       prev.map((n) => n.notifId === notifId ? { ...n, lu: true } : n)
     );
     decrement(1);
-    try {
-      await axios.patch(`${API_URL}/notification/${notifId}/lire`, {}, { headers });
-    } catch {
-      fetchNotifications();
-    }
+    notificationService.lire(notifId);
   };
 
-  const marquerToutesLues = async () => {
+  const marquerToutesLues = () => {
     setMarkingAll(true);
     setNotifications((prev) => prev.map((n) => ({ ...n, lu: true })));
-    reset(); // badge à zéro immédiatement
-    try {
-      await axios.patch(`${API_URL}/notification/lire-tout`, {}, { headers });
-    } catch {
-      fetchNotifications();
-    } finally {
-      setMarkingAll(false);
-    }
+    reset();
+    notificationService.lireTout(userId);
+    setMarkingAll(false);
   };
 
   return (

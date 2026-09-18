@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { X, Calendar, Clock, Users, GraduationCap } from "lucide-react";
-import axios from "axios";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { formationService } from "../../../lib/mockService";
 
 type Formation = {
   formationId: number;
@@ -46,25 +45,16 @@ const ConsulterFormation = ({ formation, onClose, onSuccess }: Props) => {
 
   const dejaInscrit = formation.employes?.some((e) => e.userId === me.userId);
 
-  const handleInscrire = async () => {
-    setError("");
-    setSuccess("");
+  const handleInscrire = () => {
+    setError(""); setSuccess("");
     setInscribing(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${API_URL}/formation/${formation.formationId}/inscrire`,
-        { userId: me.userId },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      formationService.inscrire(formation.formationId, me.userId);
       setSuccess("Inscription réussie !");
       onSuccess();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de l'inscription");
-    } finally {
-      setInscribing(false);
-    }
+      setError(err?.message || "Erreur lors de l'inscription");
+    } finally { setInscribing(false); }
   };
 
   return (

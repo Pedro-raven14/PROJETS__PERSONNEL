@@ -1,6 +1,5 @@
 import { X, Wallet, Download, ExternalLink, TrendingDown, TrendingUp, FileText, Calculator } from "lucide-react";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
 
 type FichePaie = {
   ficheId: number;
@@ -30,9 +29,7 @@ const formatPeriode = (periode: string) => {
 };
 
 const DetailFichePaie = ({ fiche, onClose }: Props) => {
-  const token  = localStorage.getItem("token");
-  const pdfUrl = `${API_URL}/fiche-paie/${fiche.ficheId}/document?token=${token}`;
-
+  // En mode démo, pas de PDF disponible
   const salaireBase    = Number(fiche.salaire_base);
   const deduction      = Number(fiche.deduction_absence);
   const montantSup     = Number(fiche.montant_heures_sup);
@@ -159,24 +156,9 @@ const DetailFichePaie = ({ fiche, onClose }: Props) => {
 
           {/* ── Actions PDF ── */}
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            {fiche.documentPath ? (
-              <>
-                <a href={pdfUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: 1 }}>
-                  <Button variant="outline" style={{ width: "100%", gap: "0.375rem" }}>
-                    <ExternalLink style={{ width: "15px", height: "15px" }} /> Voir le PDF
-                  </Button>
-                </a>
-                <a href={pdfUrl} download style={{ textDecoration: "none", flex: 1 }}>
-                  <Button style={{ width: "100%", gap: "0.375rem" }}>
-                    <Download style={{ width: "15px", height: "15px" }} /> Télécharger
-                  </Button>
-                </a>
-              </>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1rem", borderRadius: "0.5rem", backgroundColor: "var(--color-muted)", fontSize: "0.8125rem", color: "var(--color-muted-foreground)", width: "100%" }}>
-                <FileText style={{ width: "15px", height: "15px" }} /> PDF en cours de génération…
-              </div>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1rem", borderRadius: "0.5rem", backgroundColor: "var(--color-muted)", fontSize: "0.8125rem", color: "var(--color-muted-foreground)", width: "100%" }}>
+              <FileText style={{ width: "15px", height: "15px" }} /> PDF non disponible en mode démo
+            </div>
           </div>
         </div>
       </div>

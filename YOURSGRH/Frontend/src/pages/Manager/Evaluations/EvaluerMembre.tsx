@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { X, Star } from "lucide-react";
-import axios from "axios";
 import { Button } from "../../../components/UI/Button";
-import { API_URL } from "../../../config/api";
+import { evaluationService } from "../../../lib/mockService";
 
 type Cycle  = { cycleId: number; nom: string; criteres: string[] };
 type Membre = { userId: number; nom: string; prenom: string };
@@ -28,26 +27,20 @@ const EvaluerMembre = ({ cycle, membre, evaluateurId, onClose, onSuccess }: Prop
 
   const noteGlobale = Object.values(notes).reduce((a, b) => a + b, 0) / cycle.criteres.length;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     setSaving(true); setError("");
     try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${API_URL}/evaluation/add`,
-        {
-          userId:        membre.userId,
-          evaluateurId,
-          cycleId:       cycle.cycleId,
-          date:          new Date().toISOString().split("T")[0],
-          notes_criteres: notes,
-          commentaire:   commentaire.trim() || undefined,
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      evaluationService.add({
+        userId:         membre.userId,
+        evaluateurId,
+        cycleId:        cycle.cycleId,
+        date:           new Date().toISOString().split("T")[0],
+        notes_criteres: notes,
+        commentaire:    commentaire.trim() || undefined,
+      });
       onSuccess(); onClose();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de l'enregistrement");
+      setError(err?.message || "Erreur lors de l'enregistrement");
     } finally { setSaving(false); }
   };
 

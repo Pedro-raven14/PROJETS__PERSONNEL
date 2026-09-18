@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { X, Calendar, Clock, Users, GraduationCap } from "lucide-react";
-import axios from "axios";
 import { Button } from "../UI/Button";
-import { API_URL } from "../../config/api";
+import { formationService } from "../../lib/mockService";
 
 type Formation = {
   formationId: number;
@@ -37,7 +36,6 @@ const ConsulterFormationShared = ({ formation, onClose, onSuccess }: Props) => {
   const [error, setError]     = useState("");
   const [success, setSuccess] = useState("");
 
-  const token = localStorage.getItem("token");
   const me    = (() => { try { return JSON.parse(localStorage.getItem("employee") || "{}"); } catch { return {}; } })();
 
   const inscrits    = formation.employes?.length ?? 0;
@@ -45,34 +43,25 @@ const ConsulterFormationShared = ({ formation, onClose, onSuccess }: Props) => {
   const fillRate    = formation.capacite > 0 ? Math.round((inscrits / formation.capacite) * 100) : 0;
   const estInscrit  = formation.employes?.some(e => e.userId === me.userId);
 
-  const handleInscrire = async () => {
+  const handleInscrire = () => {
     setError(""); setSuccess(""); setLoading(true);
     try {
-      await axios.post(
-        `${API_URL}/formation/${formation.formationId}/inscrire`,
-        { userId: me.userId },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      formationService.inscrire(formation.formationId, me.userId);
       setSuccess("Inscription réussie !");
       onSuccess();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de l'inscription");
+      setError(err?.message || "Erreur lors de l'inscription");
     } finally { setLoading(false); }
   };
 
-  const handleDesinscrire = async () => {
+  const handleDesinscrire = () => {
     setError(""); setSuccess(""); setLoading(true);
     try {
-      await axios.delete(
-        `${API_URL}/formation/${formation.formationId}/inscrire/${me.userId}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      formationService.desinscrire(formation.formationId, me.userId);
       setSuccess("Désinscription effectuée.");
       onSuccess();
     } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(typeof msg === "string" ? msg : "Erreur lors de la désinscription");
+      setError(err?.message || "Erreur lors de la désinscription");
     } finally { setLoading(false); }
   };
 

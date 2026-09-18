@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Award, CalendarDays, Star, User } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../../../components/element/PageHeader";
-import { API_URL } from "../../../config/api";
+import { evaluationService } from "../../../lib/mockService";
 
 type Evaluation = {
   evaluationId: number;
@@ -36,21 +35,11 @@ const EmployeeEvaluation = () => {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading]         = useState(true);
 
-  const token = localStorage.getItem("token");
-  const me    = (() => { try { return JSON.parse(localStorage.getItem("employee") || "{}"); } catch { return {}; } })();
+  const me = (() => { try { return JSON.parse(localStorage.getItem("employee") || "{}"); } catch { return {}; } })();
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/evaluation/employee/${me.userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setEvaluations(res.data);
-      } catch {
-        // silencieux
-      } finally { setLoading(false); }
-    };
-    fetch();
+    try { setEvaluations(evaluationService.getByEmployee(me.userId) as Evaluation[]); }
+    catch { /* silencieux */ } finally { setLoading(false); }
   }, []);
 
   return (

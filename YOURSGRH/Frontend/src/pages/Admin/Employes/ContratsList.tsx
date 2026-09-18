@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, FileText, Eye, CheckCircle } from "lucide-react";
-import axios from "axios";
-import { API_URL } from "../../../config/api";
+import { contratService } from "../../../lib/mockService";
 import ContratViewer from "./ContratViewer";
 
 type Contrat = {
@@ -42,26 +41,22 @@ const StatutBadge = ({ statut, signe }: { statut: string; signe: boolean }) => {
 };
 
 const ContratsList = ({ employee, onClose }: Props) => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
-
   const [contrats,  setContrats]  = useState<Contrat[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [selected,  setSelected]  = useState<Contrat | null>(null);
 
   useEffect(() => {
-    axios.get(`${API_URL}/contrat/employee/${employee.userId}`, { headers })
-      .then((res) => {
-        // Trier : ACTIF en premier, puis par date de début décroissante
-        const sorted = [...res.data].sort((a, b) => {
-          if (a.statut === 'ACTIF' && b.statut !== 'ACTIF') return -1;
-          if (b.statut === 'ACTIF' && a.statut !== 'ACTIF') return 1;
-          return new Date(b.date_debut).getTime() - new Date(a.date_debut).getTime();
-        });
-        setContrats(sorted);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    try {
+      const data = contratService.getByEmployee(employee.userId) as Contrat[];
+      const sorted = [...data].sort((a, b) => {
+        if (a.statut === 'ACTIF' && b.statut !== 'ACTIF') return -1;
+        if (b.statut === 'ACTIF' && a.statut !== 'ACTIF') return 1;
+        return new Date(b.date_debut).getTime() - new Date(a.date_debut).getTime();
+      });
+      setContrats(sorted);
+    } catch { /* silencieux */ } finally {
+      setLoading(false);
+    }
   }, [employee.userId]);
 
   if (selected) {

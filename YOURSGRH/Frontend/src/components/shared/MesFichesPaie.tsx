@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   Wallet, ChevronLeft, ChevronRight,
-  ExternalLink, Download, X, FileText, Calculator,
+  X, FileText, Calculator,
 } from "lucide-react";
-import axios from "axios";
 import { PageHeader } from "../element/PageHeader";
 import { Button } from "../UI/Button";
-import { API_URL } from "../../config/api";
+import { fichePaieService } from "../../lib/mockService";
 import { useIsMobile } from "../../hooks/Use-mobile";
 
 type FichePaie = {
@@ -61,9 +60,6 @@ const LigneDetail = ({ label, valeur, couleur, sous, gras }: { label: string; va
 
 // ── Modal détail ──────────────────────────────────────────────────────────────
 const ModalDetail = ({ fiche, onClose }: { fiche: FichePaie; onClose: () => void }) => {
-  const token  = localStorage.getItem("token");
-  const pdfUrl = `${API_URL}/fiche-paie/${fiche.ficheId}/document?token=${token}`;
-
   const salaireBase = Number(fiche.salaire_base);
   const deduction   = Number(fiche.deduction_absence);
   const montantSup  = Number(fiche.montant_heures_sup);
@@ -103,14 +99,12 @@ const ModalDetail = ({ fiche, onClose }: { fiche: FichePaie; onClose: () => void
 
         <div style={{ padding: "1.25rem 1.5rem", display: "flex", flexDirection: "column", gap: "0.875rem" }}>
 
-          {/* Taux de référence */}
           <Section titre="Taux de référence" icon={<Calculator style={{ width: "12px", height: "12px" }} />}>
             <LigneDetail label="Salaire mensuel de base" valeur={`${fmt(salaireBase)} FCFA`} />
             <LigneDetail label="Taux horaire (base ÷ 173,33)" valeur={`${fmt(tauxHoraire)} FCFA/h`} sous />
             <LigneDetail label="Salaire journalier (taux × 8h)" valeur={`${fmt(salaireJour)} FCFA/j`} sous />
           </Section>
 
-          {/* Absences */}
           {nbJoursAbs > 0 ? (
             <Section titre="Absences" couleur="var(--color-destructive)">
               <LigneDetail label="Jours d'absence" valeur={`${nbJoursAbs} jour${nbJoursAbs > 1 ? "s" : ""}`} />
@@ -122,7 +116,6 @@ const ModalDetail = ({ fiche, onClose }: { fiche: FichePaie; onClose: () => void
             </Section>
           )}
 
-          {/* Heures sup */}
           {nbHeuresSup > 0 ? (
             <Section titre="Heures supplémentaires" couleur="var(--color-success)">
               <LigneDetail label="Heures déclarées et validées" valeur={`${nbHeuresSup}h`} />
@@ -136,7 +129,6 @@ const ModalDetail = ({ fiche, onClose }: { fiche: FichePaie; onClose: () => void
             </Section>
           )}
 
-          {/* Récapitulatif */}
           <div style={{ border: "1px solid var(--color-border)", borderRadius: "0.5rem", overflow: "hidden" }}>
             <div style={{ padding: "0.5rem 0.875rem", backgroundColor: "var(--color-muted)" }}>
               <span style={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--color-muted-foreground)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Récapitulatif</span>
@@ -153,7 +145,6 @@ const ModalDetail = ({ fiche, onClose }: { fiche: FichePaie; onClose: () => void
             </div>
           </div>
 
-          {/* Métadonnées */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
             {[{ label: "Période", valeur: formatPeriode(fiche.periode) }, { label: "Généré le", valeur: new Date(fiche.date_generation).toLocaleDateString("fr-FR") }].map(({ label, valeur }) => (
               <div key={label} style={{ padding: "0.5rem 0.75rem", borderRadius: "0.375rem", backgroundColor: "var(--color-muted)" }}>
@@ -163,26 +154,9 @@ const ModalDetail = ({ fiche, onClose }: { fiche: FichePaie; onClose: () => void
             ))}
           </div>
 
-          {/* Actions PDF */}
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            {fiche.documentPath ? (
-              <>
-                <a href={pdfUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: 1 }}>
-                  <Button variant="outline" style={{ width: "100%", gap: "0.375rem" }}>
-                    <ExternalLink style={{ width: "15px", height: "15px" }} /> Voir le PDF
-                  </Button>
-                </a>
-                <a href={pdfUrl} download style={{ textDecoration: "none", flex: 1 }}>
-                  <Button style={{ width: "100%", gap: "0.375rem" }}>
-                    <Download style={{ width: "15px", height: "15px" }} /> Télécharger
-                  </Button>
-                </a>
-              </>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1rem", borderRadius: "0.5rem", backgroundColor: "var(--color-muted)", fontSize: "0.8125rem", color: "var(--color-muted-foreground)", width: "100%" }}>
-                <FileText style={{ width: "15px", height: "15px" }} /> PDF en cours de génération…
-              </div>
-            )}
+          {/* PDF non disponible en mode démo */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1rem", borderRadius: "0.5rem", backgroundColor: "var(--color-muted)", fontSize: "0.8125rem", color: "var(--color-muted-foreground)", width: "100%" }}>
+            <FileText style={{ width: "15px", height: "15px" }} /> PDF non disponible en mode démo
           </div>
         </div>
       </div>
@@ -192,8 +166,6 @@ const ModalDetail = ({ fiche, onClose }: { fiche: FichePaie; onClose: () => void
 
 // ── Page principale ───────────────────────────────────────────────────────────
 const MesFichesPaie = () => {
-  const token   = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
   const isMobile = useIsMobile();
 
   const [fiches, setFiches]         = useState<FichePaie[]>([]);
@@ -204,20 +176,16 @@ const MesFichesPaie = () => {
   const [ficheDetail, setFicheDetail] = useState<FichePaie | null>(null);
   const LIMIT = 10;
 
-  const fetchFiches = async (p = 1) => {
+  const fetchFiches = (p = 1) => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/fiche-paie/mes-fiches`, {
-        params: { page: p, limit: LIMIT },
-        headers,
-      });
-      setFiches(res.data.data ?? res.data);
-      setTotal(res.data.total ?? 0);
-      setTotalPages(res.data.totalPages ?? 1);
+      const emp = (() => { try { return JSON.parse(localStorage.getItem("employee") || "null"); } catch { return null; } })();
+      const result = fichePaieService.getMesFiches(emp?.userId ?? 0, p, LIMIT);
+      setFiches(result.data);
+      setTotal(result.total);
+      setTotalPages(result.totalPages);
       setPage(p);
-    } catch {
-      // silencieux
-    } finally {
+    } catch { /* silencieux */ } finally {
       setLoading(false);
     }
   };
@@ -233,7 +201,6 @@ const MesFichesPaie = () => {
 
       <div className="stat-card" style={{ padding: 0, overflow: "hidden" }}>
         {isMobile ? (
-          /* ── Vue carte mobile ── */
           <div style={{ display: "flex", flexDirection: "column" }}>
             {loading ? (
               <p style={{ padding: "2rem", textAlign: "center", color: "var(--color-muted-foreground)" }}>Chargement…</p>
@@ -241,47 +208,22 @@ const MesFichesPaie = () => {
               <div style={{ padding: "3rem", textAlign: "center" }}>
                 <Wallet style={{ width: "2rem", height: "2rem", margin: "0 auto 0.75rem", display: "block", color: "var(--color-muted-foreground)" }} />
                 <p style={{ color: "var(--color-muted-foreground)", margin: 0 }}>Aucun bulletin de paie disponible</p>
-                <p style={{ color: "var(--color-muted-foreground)", fontSize: "0.875rem", margin: "0.5rem 0 0" }}>
-                  Vos bulletins apparaîtront ici une fois générés.
-                </p>
               </div>
             ) : fiches.map((f, i) => (
-              <div
-                key={f.ficheId}
-                style={{ padding: "0.875rem 1rem", borderBottom: i < fiches.length - 1 ? "1px solid var(--color-border)" : "none" }}
-              >
+              <div key={f.ficheId} style={{ padding: "0.875rem 1rem", borderBottom: i < fiches.length - 1 ? "1px solid var(--color-border)" : "none" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.375rem" }}>
                   <div>
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: "0.9375rem", fontFamily: "var(--font-display)" }}>
-                      {formatPeriode(f.periode)}
-                    </p>
-                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--color-muted-foreground)" }}>
-                      Généré le {new Date(f.date_generation).toLocaleDateString("fr-FR")}
-                    </p>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: "0.9375rem", fontFamily: "var(--font-display)" }}>{formatPeriode(f.periode)}</p>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--color-muted-foreground)" }}>Généré le {new Date(f.date_generation).toLocaleDateString("fr-FR")}</p>
                   </div>
-                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--color-primary)", fontSize: "0.9375rem" }}>
-                    {fmt(f.salaire_net)} FCFA
-                  </span>
+                  <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--color-primary)", fontSize: "0.9375rem" }}>{fmt(f.salaire_net)} FCFA</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
-                  <div style={{ display: "flex", gap: "0.625rem", flexWrap: "wrap", fontSize: "0.75rem", color: "var(--color-muted-foreground)" }}>
-                    {f.nb_jours_absence > 0 && (
-                      <span style={{ color: "var(--color-destructive)" }}>−{f.nb_jours_absence}j</span>
-                    )}
-                    {Number(f.nb_heures_sup) > 0 && (
-                      <span style={{ color: "var(--color-success)" }}>+{f.nb_heures_sup}h sup.</span>
-                    )}
+                  <div style={{ display: "flex", gap: "0.625rem", fontSize: "0.75rem", color: "var(--color-muted-foreground)" }}>
+                    {f.nb_jours_absence > 0 && <span style={{ color: "var(--color-destructive)" }}>−{f.nb_jours_absence}j</span>}
+                    {Number(f.nb_heures_sup) > 0 && <span style={{ color: "var(--color-success)" }}>+{f.nb_heures_sup}h sup.</span>}
                   </div>
-                  <button
-                    onClick={() => setFicheDetail(f)}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: "0.25rem",
-                      padding: "0.3rem 0.625rem", borderRadius: "0.375rem",
-                      border: "1px solid var(--color-border)", background: "transparent",
-                      cursor: "pointer", fontSize: "0.75rem", color: "var(--color-primary)",
-                      fontFamily: "var(--font-display)", fontWeight: 500,
-                    }}
-                  >
+                  <button onClick={() => setFicheDetail(f)} style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.3rem 0.625rem", borderRadius: "0.375rem", border: "1px solid var(--color-border)", background: "transparent", cursor: "pointer", fontSize: "0.75rem", color: "var(--color-primary)", fontFamily: "var(--font-display)", fontWeight: 500 }}>
                     Voir plus
                   </button>
                 </div>
@@ -289,7 +231,6 @@ const MesFichesPaie = () => {
             ))}
           </div>
         ) : (
-          /* ── Vue tableau desktop ── */
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -307,64 +248,29 @@ const MesFichesPaie = () => {
                     <td colSpan={7} style={{ padding: "3rem", textAlign: "center" }}>
                       <Wallet style={{ width: "2rem", height: "2rem", margin: "0 auto 0.75rem", display: "block", color: "var(--color-muted-foreground)" }} />
                       <p style={{ color: "var(--color-muted-foreground)", margin: 0 }}>Aucun bulletin de paie disponible</p>
-                      <p style={{ color: "var(--color-muted-foreground)", fontSize: "0.875rem", margin: "0.5rem 0 0" }}>
-                        Vos bulletins apparaîtront ici une fois générés.
-                      </p>
                     </td>
                   </tr>
                 ) : fiches.map((f) => (
-                  <tr
-                    key={f.ficheId}
-                    style={{ borderBottom: "1px solid var(--color-border)", transition: "background 0.15s" }}
+                  <tr key={f.ficheId} style={{ borderBottom: "1px solid var(--color-border)", transition: "background 0.15s" }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-muted)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
-                  >
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}>
                     <td style={{ padding: "0.875rem 1.25rem" }}>
-                      <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.9375rem" }}>
-                        {formatPeriode(f.periode)}
-                      </span>
+                      <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "0.9375rem" }}>{formatPeriode(f.periode)}</span>
                       <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--color-muted-foreground)" }}>{f.periode}</p>
                     </td>
-                    <td style={{ padding: "0.875rem 1.25rem", fontSize: "0.875rem", color: "var(--color-muted-foreground)" }}>
-                      {fmt(f.salaire_base)} FCFA
+                    <td style={{ padding: "0.875rem 1.25rem", fontSize: "0.875rem", color: "var(--color-muted-foreground)" }}>{fmt(f.salaire_base)} FCFA</td>
+                    <td style={{ padding: "0.875rem 1.25rem", fontSize: "0.875rem" }}>
+                      {f.nb_jours_absence > 0 ? <span style={{ color: "var(--color-destructive)" }}>{f.nb_jours_absence}j (−{fmt(f.deduction_absence)} FCFA)</span> : <span style={{ color: "var(--color-muted-foreground)" }}>—</span>}
                     </td>
                     <td style={{ padding: "0.875rem 1.25rem", fontSize: "0.875rem" }}>
-                      {f.nb_jours_absence > 0 ? (
-                        <span style={{ color: "var(--color-destructive)" }}>
-                          {f.nb_jours_absence}j (−{fmt(f.deduction_absence)} FCFA)
-                        </span>
-                      ) : (
-                        <span style={{ color: "var(--color-muted-foreground)" }}>—</span>
-                      )}
-                    </td>
-                    <td style={{ padding: "0.875rem 1.25rem", fontSize: "0.875rem" }}>
-                      {Number(f.nb_heures_sup) > 0 ? (
-                        <span style={{ color: "var(--color-success)" }}>
-                          {f.nb_heures_sup}h (+{fmt(f.montant_heures_sup)} FCFA)
-                        </span>
-                      ) : (
-                        <span style={{ color: "var(--color-muted-foreground)" }}>—</span>
-                      )}
+                      {Number(f.nb_heures_sup) > 0 ? <span style={{ color: "var(--color-success)" }}>{f.nb_heures_sup}h (+{fmt(f.montant_heures_sup)} FCFA)</span> : <span style={{ color: "var(--color-muted-foreground)" }}>—</span>}
                     </td>
                     <td style={{ padding: "0.875rem 1.25rem" }}>
-                      <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--color-primary)", fontSize: "0.9375rem" }}>
-                        {fmt(f.salaire_net)} FCFA
-                      </span>
+                      <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--color-primary)", fontSize: "0.9375rem" }}>{fmt(f.salaire_net)} FCFA</span>
                     </td>
-                    <td style={{ padding: "0.875rem 1.25rem", fontSize: "0.8125rem", color: "var(--color-muted-foreground)" }}>
-                      {new Date(f.date_generation).toLocaleDateString("fr-FR")}
-                    </td>
+                    <td style={{ padding: "0.875rem 1.25rem", fontSize: "0.8125rem", color: "var(--color-muted-foreground)" }}>{new Date(f.date_generation).toLocaleDateString("fr-FR")}</td>
                     <td style={{ padding: "0.875rem 1.25rem" }}>
-                      <button
-                        onClick={() => setFicheDetail(f)}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: "0.25rem",
-                          padding: "0.3rem 0.75rem", borderRadius: "0.375rem",
-                          border: "1px solid var(--color-border)", background: "transparent",
-                          cursor: "pointer", fontSize: "0.8125rem", color: "var(--color-primary)",
-                          fontFamily: "var(--font-display)", fontWeight: 500, whiteSpace: "nowrap",
-                        }}
-                      >
+                      <button onClick={() => setFicheDetail(f)} style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.3rem 0.75rem", borderRadius: "0.375rem", border: "1px solid var(--color-border)", background: "transparent", cursor: "pointer", fontSize: "0.8125rem", color: "var(--color-primary)", fontFamily: "var(--font-display)", fontWeight: 500, whiteSpace: "nowrap" }}>
                         Voir plus
                       </button>
                     </td>
@@ -375,22 +281,14 @@ const MesFichesPaie = () => {
           </div>
         )}
 
-        {/* Pagination */}
         {total > LIMIT && (
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            borderTop: "1px solid var(--color-border)", padding: "0.75rem 1.25rem",
-          }}>
-            <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--color-muted-foreground)" }}>
-              {total} bulletin{total > 1 ? "s" : ""}
-            </p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--color-border)", padding: "0.75rem 1.25rem" }}>
+            <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--color-muted-foreground)" }}>{total} bulletin{total > 1 ? "s" : ""}</p>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => fetchFiches(page - 1)}>
                 <ChevronLeft style={{ width: "14px", height: "14px" }} />
               </Button>
-              <span style={{ fontSize: "0.875rem", padding: "0.25rem 0.5rem", color: "var(--color-muted-foreground)" }}>
-                {page} / {totalPages}
-              </span>
+              <span style={{ fontSize: "0.875rem", padding: "0.25rem 0.5rem", color: "var(--color-muted-foreground)" }}>{page} / {totalPages}</span>
               <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => fetchFiches(page + 1)}>
                 <ChevronRight style={{ width: "14px", height: "14px" }} />
               </Button>
@@ -399,9 +297,7 @@ const MesFichesPaie = () => {
         )}
       </div>
 
-      {ficheDetail && (
-        <ModalDetail fiche={ficheDetail} onClose={() => setFicheDetail(null)} />
-      )}
+      {ficheDetail && <ModalDetail fiche={ficheDetail} onClose={() => setFicheDetail(null)} />}
     </div>
   );
 };
