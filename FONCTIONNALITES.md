@@ -85,3 +85,87 @@
 - **État vide** — message d'encouragement affiché quand aucune tâche n'est présente
 - **Réinitialisation de l'input** — le champ texte est vidé automatiquement après chaque ajout
 - **Responsive mobile** — layout adaptatif : padding réduit, formulaire en colonne sur petit écran, header avec flex-wrap, texte long des tâches avec retour à la ligne automatique
+
+---
+
+# Recipe Sharing Platform
+
+## Fonctionnalités
+
+### Authentification
+- **Inscription** — formulaire avec nom complet, nom d'utilisateur, email, mot de passe (confirmation + jauge de force), acceptation des CGU
+- **Connexion** — formulaire email/mot de passe avec option "Se souvenir de moi" et compte démo pré-rempli
+- **Persistance de session** — l'utilisateur reste connecté via `localStorage`
+- **Déconnexion** — accessible depuis le menu déroulant de l'avatar
+
+### Navigation & Layout
+- **Header sticky** — barre fixe en haut avec logo, barre de recherche desktop, bouton "Créer une recette" et menu utilisateur
+- **Menu burger mobile** — hamburger qui déroule les liens de navigation sur petit écran
+- **Barre de recherche duale** — version desktop dans le header, version mobile en dessous (affichage conditionnel via CSS)
+- **Menu utilisateur** — dropdown avec accès au profil, mes recettes, mes favoris et déconnexion
+- **Footer** — grille multi-colonnes avec liens catégories, liens légaux et copyright
+
+### Page d'accueil
+- **Hero section** — titre et sous-titre animés avec deux CTAs (Explorer / Créer une recette), image de fond
+- **Filtres catégories** — barre de filtres scrollable horizontalement (Petit-déjeuner, Déjeuner, Dîner, Dessert, Collation) avec filtre actif mis en valeur
+- **Grille de recettes** — affichage des recettes publiées les plus récentes en grille responsive
+- **Section newsletter** — formulaire d'inscription à la newsletter (UI uniquement)
+
+### Recettes (liste)
+- **Barre de recherche** — recherche par titre, ingrédient, description ou tag
+- **Sidebar de filtres desktop** — filtre par catégorie, difficulté, temps de préparation max et tri (plus récent, mieux noté, plus rapide)
+- **Drawer de filtres mobile** — overlay latéral avec les mêmes filtres, accessible via un bouton "Filtres"
+- **Tri** — sélecteur Récent / Mieux noté / Plus rapide
+- **Grille adaptive** — `auto-fill minmax(260px, 1fr)` — passe automatiquement d'une à plusieurs colonnes
+- **Compteur de résultats** — affiche le nombre de recettes trouvées
+
+### Carte de recette (RecipeCard)
+- **Image ou emoji de fallback** — affiche l'image uploadée ou un emoji coloré si aucune image
+- **Badge catégorie**  
+- **Bouton favori** — cœur en position absolue sur l'image, toggle immédiat
+- **Badge temps** — temps total affiché en bas de l'image
+- **Infos** — titre, note avec étoiles, auteur avec avatar, temps de préparation, difficulté, nombre de portions
+
+### Détail d'une recette
+- **Hero image** — grande image ou emoji de fond avec overlay dégradé, titre `clamp`, catégorie, auteur, date et note
+- **Stats bar** — 4 cartes (préparation, cuisson, portions, difficulté) en grille `auto-fit`
+- **Boutons d'action** — Ajouter aux favoris (toggle), Partager (copie URL dans le presse-papiers), Modifier et Supprimer (si auteur)
+- **Liste d'ingrédients interactive** — clic sur un ingrédient pour le cocher/décocher (fond vert + texte barré)
+- **Instructions numérotées** — étapes avec numéro cerclé orange
+- **Sidebar droite** — note utilisateur interactive (étoiles cliquables), tags cliquables et fiche auteur
+- **Commentaires** — formulaire de commentaire (connecté uniquement), liste des commentaires avec date et suppression (auteur ou propriétaire de la recette)
+- **Notation** — étoiles interactives (1–5) avec moyenne recalculée en temps réel
+- **Recettes similaires** — grille de 3 recettes de la même catégorie en bas de page
+
+### Création & édition de recette
+- **Formulaire multi-sections** — Informations de base, Temps & portions, Difficulté, Ingrédients, Instructions, Photo
+- **Ingrédients dynamiques** — ajout/suppression de lignes avec quantité, unité (15 options) et nom ; réorganisation par drag handle
+- **Instructions dynamiques** — ajout/suppression d'étapes numérotées
+- **Upload d'image** — zone drag-and-drop avec aperçu, limite 5 Mo, formats JPG/PNG/WebP (stockée en base64)
+- **Validation** — erreurs par champ avec scroll automatique vers la première erreur
+- **Brouillon** — bouton "Enregistrer comme brouillon" (statut `draft`) en plus de "Publier"
+- **Mode édition** — le formulaire se pré-remplit avec les données existantes (`/modifier-recette/:id`)
+- **Protection de route** — redirection vers `/connexion` si non connecté ; vérification que l'auteur est bien le propriétaire
+
+### Profil utilisateur
+- **Bannière dégradée** — en-tête coloré avec avatar superposé (chevauchement via `marginTop: -60`)
+- **Card profil** — avatar, nom, @username, bio, stats (recettes publiées, abonnés, abonnements) et bouton "Suivre" ou "Modifier"
+- **Changement d'avatar** — upload d'image directement depuis la card profil
+- **Onglets** — Mes recettes, Favoris, Abonnements, Paramètres (Favoris et Paramètres visibles par le propriétaire uniquement)
+- **Onglets scrollables** — défilement horizontal sur mobile sans scrollbar visible
+- **Recettes publiées et brouillons** — badges "Brouillon" sur les recettes non publiées, boutons Modifier/Supprimer au survol
+- **Favoris** — grille des recettes mises en favoris par l'utilisateur
+- **Paramètres** — modification du nom complet, de la bio et de la photo de profil
+
+### Données & persistance
+- **Stockage 100% localStorage** — utilisateurs, recettes, commentaires, favoris, notes
+- **Données de démonstration** — recettes et utilisateurs de démo chargés au premier lancement
+- **Recherche et filtres** — fonction utilitaire `searchAndFilterRecipes` centralisée
+
+### Responsive & UX
+- **Mobile first** — menu burger, drawer filtres, search bar duale, onglets scrollables
+- **Grilles adaptatives** — `auto-fill/auto-fit minmax()` sur toutes les listes de recettes
+- **Textes fluides** — `clamp()` sur les titres principaux
+- **Toasts** — notifications discrètes (succès / erreur / info) avec auto-disparition
+- **Animations** — `fadeIn` CSS sur les menus déroulants et overlays
+- **Feedback visuel** — skeletons, états désactivés sur les boutons en cours de soumission

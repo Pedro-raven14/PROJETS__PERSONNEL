@@ -1,0 +1,17 @@
+interface PageHeaderProps {
+  title: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
+}
+
+export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h1 className="page-title">{title}</h1>
+        {subtitle && <p className="page-subtitle mt-1">{subtitle}</p>}
+      </div>
+      {actions && <div className="flex items-center gap-3">{actions}</div>}
+    </div>
+  );
+}

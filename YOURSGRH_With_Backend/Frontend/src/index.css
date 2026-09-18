@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Lato', sans-serif;
+
+  /* Colors */
+  --color-background: hsl(210 40% 98%);
+  --color-foreground: hsl(222 47% 11%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 11%);
+
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222 47% 11%);
+
+  --color-primary: hsl(221 83% 53%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  --color-secondary: hsl(215 28% 17%);
+  --color-secondary-foreground: hsl(210 40% 98%);
+
+  --color-muted: hsl(210 40% 96%);
+  --color-muted-foreground: hsl(215 16% 47%);
+
+  --color-accent: hsl(243 75% 59%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --color-success: hsl(142 71% 45%);
+  --color-success-foreground: hsl(0 0% 100%);
+
+  --color-warning: hsl(38 92% 50%);
+  --color-warning-foreground: hsl(0 0% 100%);
+
+  --color-ai: hsl(173 58% 39%);
+  --color-ai-foreground: hsl(0 0% 100%);
+
+  --color-border: hsl(214 32% 91%);
+  --color-input: hsl(214 32% 91%);
+  --color-ring: hsl(221 83% 53%);
+
+  /* Sidebar */
+  --color-sidebar: hsl(0 0% 100%);
+  --color-sidebar-foreground: hsl(222 47% 11%);
+  --color-sidebar-primary: hsl(243 75% 59%);
+  --color-sidebar-primary-foreground: hsl(0 0% 100%);
+  --color-sidebar-accent: hsl(243 75% 97%);
+  --color-sidebar-accent-foreground: hsl(243 75% 59%);
+  --color-sidebar-border: hsl(214 32% 91%);
+  --color-sidebar-ring: hsl(221 83% 53%);
+  --color-sidebar-muted: hsl(215 16% 47%);
+
+  /* Border radius */
+  --radius: 0.5rem;
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+
+  /* Shadows */
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes accordion-down {
+    from { height: 0; }
+    to   { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to   { height: 0; }
+  }
+}
+
+/* Base styles */
+*, *::before, *::after {
+  border-color: var(--color-border);
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+/* Component classes */
+.stat-card {
+  background-color: var(--color-card);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease;
+}
+.stat-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.badge-success  { display: inline-flex; align-items: center; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; background-color: color-mix(in srgb, var(--color-success) 10%, transparent); color: var(--color-success); }
+.badge-warning  { display: inline-flex; align-items: center; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; background-color: color-mix(in srgb, var(--color-warning) 10%, transparent); color: var(--color-warning); }
+.badge-destructive { display: inline-flex; align-items: center; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; background-color: color-mix(in srgb, var(--color-destructive) 10%, transparent); color: var(--color-destructive); }
+.badge-ai       { display: inline-flex; align-items: center; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; background-color: color-mix(in srgb, var(--color-ai) 10%, transparent); color: var(--color-ai); }
+.badge-primary  { display: inline-flex; align-items: center; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; background-color: color-mix(in srgb, var(--color-primary) 10%, transparent); color: var(--color-primary); }
+.badge-muted    { display: inline-flex; align-items: center; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; background-color: var(--color-muted); color: var(--color-muted-foreground); }
+
+.table-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted-foreground);
+  font-family: var(--font-display);
+}
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-family: var(--font-display);
+}
+.page-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+  font-family: var(--font-body);
+}
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+}
+
+/* ── Sidebar utility classes (compatibilité composant UI) ── */
+.bg-sidebar          { background-color: var(--color-sidebar) !important; }
+.text-sidebar-foreground { color: var(--color-sidebar-foreground) !important; }
+.bg-sidebar-accent   { background-color: var(--color-sidebar-accent) !important; }
+.text-sidebar-accent-foreground { color: var(--color-sidebar-accent-foreground) !important; }
+.border-sidebar-border { border-color: var(--color-sidebar-border) !important; }
+.text-sidebar-muted  { color: var(--color-sidebar-muted) !important; }
+
+/* ── Autres utilitaires manquants en v4 ── */
+.bg-card             { background-color: var(--color-card) !important; }
+.text-foreground     { color: var(--color-foreground) !important; }
+.bg-background       { background-color: var(--color-background) !important; }
+.border-border       { border-color: var(--color-border) !important; }
+.text-muted-foreground { color: var(--color-muted-foreground) !important; }
+.bg-muted            { background-color: var(--color-muted) !important; }
+.text-primary        { color: var(--color-primary) !important; }
+.bg-primary          { background-color: var(--color-primary) !important; }
+.text-primary-foreground { color: var(--color-primary-foreground) !important; }
+.bg-accent           { background-color: var(--color-accent) !important; }
+.text-accent-foreground { color: var(--color-accent-foreground) !important; }
+.text-destructive    { color: var(--color-destructive) !important; }
+.bg-destructive      { background-color: var(--color-destructive) !important; }
+.text-destructive-foreground { color: var(--color-destructive-foreground) !important; }
+
+/* hover states */
+.hover\:bg-sidebar-accent:hover { background-color: var(--color-sidebar-accent) !important; }
+.hover\:text-sidebar-accent-foreground:hover { color: var(--color-sidebar-accent-foreground) !important; }
+.hover\:bg-muted:hover { background-color: var(--color-muted) !important; }
+.hover\:text-foreground:hover { color: var(--color-foreground) !important; }
+
+/* data-active states for SidebarMenuButton */
+[data-active="true"] {
+  background-color: var(--color-sidebar-accent) !important;
+  color: var(--color-sidebar-accent-foreground) !important;
+  font-weight: 600;
+}
+
+/* font families */
+.font-display { font-family: var(--font-display) !important; }
+.font-body    { font-family: var(--font-body) !important; }
+
+/* ── Sidebar nav item hover ── */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+.sidebar-nav-item:hover {
+  background-color: var(--color-sidebar-accent) !important;
+  color: var(--color-sidebar-accent-foreground) !important;
+}
+
+/* ── Userbox dropdown menu items ── */
+.userbox-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-foreground);
+  transition: background-color 0.15s;
+}
+.userbox-menu-item:hover {
+  background-color: var(--color-muted);
+}
+.userbox-menu-item--danger {
+  color: var(--color-destructive);
+}
+.userbox-menu-item--danger:hover {
+  background-color: color-mix(in srgb, var(--color-destructive) 8%, transparent);
+}
